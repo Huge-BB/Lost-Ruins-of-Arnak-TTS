@@ -1,5 +1,8 @@
 export type PlayerId = string;
+export type CardId = string;
 export type Resource = 'tablet' | 'arrowhead' | 'jewel' | 'coin' | 'compass' | 'fear';
+export type CardType = 'Item' | 'Artifact' | 'Fear' | 'Starter' | 'Other';
+export type TravelIcon = 'boot' | 'car' | 'ship' | 'plane';
 
 export interface Resources {
   tablet: number;
@@ -8,6 +11,23 @@ export interface Resources {
   coin: number;
   compass: number;
   fear: number;
+}
+
+export interface CardDefinition {
+  id: CardId;
+  name: string;
+  type: CardType;
+  expansion: string;
+  cost?: number;
+  points?: number;
+  travel?: Partial<Record<TravelIcon, number>>;
+  image?: {
+    faceUrl: string;
+    backUrl?: string;
+    sheetWidth?: number;
+    sheetHeight?: number;
+    cardIndex?: number;
+  };
 }
 
 export interface PlayerState {
@@ -19,10 +39,10 @@ export interface PlayerState {
   hasPassed: boolean;
   researchMagnifying: number;
   researchJournal: number;
-  deck: string[];
-  hand: string[];
-  discard: string[];
-  playedCards: string[];
+  deck: CardId[];
+  hand: CardId[];
+  discard: CardId[];
+  playedCards: CardId[];
 }
 
 export interface SiteState {
@@ -34,8 +54,10 @@ export interface SiteState {
 }
 
 export interface MarketState {
-  items: string[];
-  artifacts: string[];
+  items: CardId[];
+  artifacts: CardId[];
+  itemDeck: CardId[];
+  artifactDeck: CardId[];
 }
 
 export interface ResearchState {
@@ -56,6 +78,10 @@ export interface GameState {
   research: ResearchState;
 }
 
+export interface EngineContext {
+  cards: Record<CardId, CardDefinition>;
+}
+
 export type GameAction =
   | { type: 'START_GAME' }
   | { type: 'END_TURN'; playerId: PlayerId }
@@ -63,4 +89,5 @@ export type GameAction =
   | { type: 'PLACE_WORKER'; playerId: PlayerId; siteId: string }
   | { type: 'GAIN_RESOURCE'; playerId: PlayerId; resource: Resource; amount: number }
   | { type: 'SPEND_RESOURCE'; playerId: PlayerId; resource: Resource; amount: number }
-  | { type: 'ADVANCE_RESEARCH'; playerId: PlayerId; track: 'magnifying' | 'journal'; amount?: number };
+  | { type: 'ADVANCE_RESEARCH'; playerId: PlayerId; track: 'magnifying' | 'journal'; amount?: number }
+  | { type: 'BUY_CARD'; playerId: PlayerId; cardId: CardId };
