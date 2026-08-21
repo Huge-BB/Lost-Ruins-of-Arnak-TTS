@@ -1,21 +1,23 @@
 import { assertVerifiedResearchBridge, findResearchBridge, findResearchNode, researchTempleNode } from './research-manual.ts';
-import { resolveResearchNodeRewards, resolveResearchReward } from './research-rewards.ts';
+import { resolveResearchNodeRewards, resolveResearchRewards } from './research-rewards.ts';
 import { assertLegalResearchNodeMove, researchStartNode } from './research-topology.ts';
 import { assignTempleArrival } from './temple-arrivals.ts';
 import type {
   GameState,
   PlayerId,
-  ResearchCost,
   ResearchNodeId,
   ResearchToken,
   ResearchTrackDefinition,
+  ResearchCost,
   SpendableResource,
 } from './types.ts';
 
 const COST_RESOURCES: SpendableResource[] = ['coin', 'compass', 'tablet', 'arrowhead', 'jewel'];
 
-function usableIdolCount(state: GameState, playerId: PlayerId) {
-  return state.players[playerId].idols.filter(idol => !idol.inSlot).length;
+function availableIdolCount(state: GameState, playerId: PlayerId) {
+  const player = state.players[playerId];
+  if (!player) throw new Error(`Unknown player: ${playerId}`);
+  return player.idols.filter(idol => !idol.inSlot).length;
 }
 
 function assertCanPay(state: GameState, playerId: PlayerId, cost: ResearchCost) {
@@ -25,8 +27,7 @@ function assertCanPay(state: GameState, playerId: PlayerId, cost: ResearchCost) 
     const amount = cost[resource] ?? 0;
     if (player.resources[resource] < amount) throw new Error(`Insufficient ${resource}`);
   }
-  const idolAmount = cost.usableIdol ?? 0;
-  if (usableIdolCount(state, playerId) < idolAmount) throw new Error('Insufficient usable idol');
+  if (availableIdolCount(state, playerId) < (cost.usableIdol ?? 0)) throw new Error('Insufficient usable idol');
 }
 
 function pay(state: GameState, playerId: PlayerId, cost: ResearchCost) {
@@ -34,21 +35,14 @@ function pay(state: GameState, playerId: PlayerId, cost: ResearchCost) {
   for (const resource of COST_RESOURCES) player.resources[resource] -= cost[resource] ?? 0;
   let idolsToPay = cost.usableIdol ?? 0;
   if (idolsToPay > 0) {
-    player.idols = player.idols.filter((idol) => {
-      if (idolsToPay > 0 && !idol.inSlot) {
-        idolsToPay -= 1;
-        return false;
-      }
+    player.idols = player.idols.filter(idol => {
+      if (idolsToPay > 0 && !idol.inSlot) { idolsToPay -= 1; return false; }
       return true;
     });
   }
 }
 
-export interface NodeResearchMove {
-  playerId: PlayerId;
-  token: ResearchToken;
-  toNodeId: ResearchNodeId;
-}
+export interface NodeResearchMove { playerId: PlayerId; token: ResearchToken; toNodeId: ResearchNodeId; }
 
 export function advanceResearchByNode(state: GameState, track: ResearchTrackDefinition, move: NodeResearchMove) {
   if (state.phase !== 'playing') throw new Error('Game is not in progress');
@@ -72,16 +66,12 @@ export function advanceResearchByNode(state: GameState, track: ResearchTrackDefi
   nodeRecord[move.playerId] = move.toNodeId;
 
   if (move.toNodeId === researchTempleNode(track.id)) {
-    const arrival = assignTempleArrival(
-      { arrivals: state.research.templeArrivals, points: state.research.templeArrivalPoints },
-      track,
-      move.playerId,
-    );
+    const arrival = assignTempleArrival({ arrivals: state.research.templeArrivals, points: state.research.templeArrivalPoints }, track, move.playerId);
     state.research.templeArrivals = arrival.arrivals;
     state.research.templeArrivalPoints = arrival.points;
     state.research.magnifying[move.playerId] = track.rows.length;
     player.researchMagnifying = track.rows.length;
-    resolveResearchReward(state, move.playerId, bridge.id, bridge.reward);
+    resolveResearchRewards(state, move.playerId, bridge.id, bridge.rewards);
     return bridge;
   }
 
@@ -89,8 +79,7 @@ export function advanceResearchByNode(state: GameState, track: ResearchTrackDefi
   state.research[move.token][move.playerId] = node.rowIndex;
   if (move.token === 'magnifying') player.researchMagnifying = node.rowIndex;
   else player.researchJournal = node.rowIndex;
-
-  resolveResearchReward(state, move.playerId, bridge.id, bridge.reward);
+  resolveResearchRewards(state, move.playerId, bridge.id, bridge.rewards);
   resolveResearchNodeRewards(state, move.playerId, move.token, node);
   return bridge;
 }
