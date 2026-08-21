@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 import { buildBaseGameCardPools, prepareBaseGameSetup, validateBaseGameCardPools } from './cards.ts';
-import type { EngineContext, SiteDefinition } from './types.ts';
+import type { EngineContext, GuardianDefinition, IdolDefinition, SiteDefinition } from './types.ts';
 
 async function loadExtractedContext(): Promise<EngineContext> {
   const raw = await readFile(new URL('./generated/cards.json', import.meta.url), 'utf8');
@@ -11,6 +11,16 @@ async function loadExtractedContext(): Promise<EngineContext> {
 
 async function loadExtractedSites(): Promise<Record<string, SiteDefinition>> {
   const raw = await readFile(new URL('./generated/sites.json', import.meta.url), 'utf8');
+  return JSON.parse(raw);
+}
+
+async function loadExtractedIdols(): Promise<Record<string, IdolDefinition>> {
+  const raw = await readFile(new URL('./generated/idols.json', import.meta.url), 'utf8');
+  return JSON.parse(raw);
+}
+
+async function loadExtractedGuardians(): Promise<Record<string, GuardianDefinition>> {
+  const raw = await readFile(new URL('./generated/guardians.json', import.meta.url), 'utf8');
   return JSON.parse(raw);
 }
 
@@ -52,5 +62,22 @@ test('extracted TTS site catalog preserves base-game levels and reward codes', a
   for (const site of all) {
     assert.equal(site.expansion, 'Base Game');
     assert.ok(site.image?.faceUrl);
+  }
+});
+
+test('extracted TTS idols and guardians form usable base-game discovery pools', async () => {
+  const idols = await loadExtractedIdols();
+  const guardians = await loadExtractedGuardians();
+
+  assert.ok(Object.keys(idols).length >= 12);
+  assert.ok(Object.keys(guardians).length >= 10);
+  assert.equal(idols['0a80b4']?.rewardCode, 'e');
+  for (const idol of Object.values(idols)) {
+    assert.equal(idol.expansion, 'Base Game');
+    assert.ok(idol.image?.faceUrl);
+  }
+  for (const guardian of Object.values(guardians)) {
+    assert.equal(guardian.expansion, 'Base Game');
+    assert.ok(guardian.image?.faceUrl);
   }
 });
