@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame } from './engine.ts';
 import { templeRulesFor } from './temple-rules.ts';
+import { defeatLizardTrackGuardian, placeLizardTrackGuardian } from './temples/lizard-state.ts';
 import type { ResearchBridgeDefinition, ResearchTrackDefinition } from './types.ts';
 
 function playingState() {
@@ -44,12 +45,13 @@ test('Monkey bridge can be restricted to journal only', () => {
   assert.throws(() => rules.validateMove?.({ state, track: t, playerId: 'p1', token: 'magnifying', from: 'from', to: 'to', bridge: b }), /cannot use research bridge/);
 });
 
-test('Lizard guardian blocker prevents movement through its configured node', () => {
+test('Lizard track guardian blocks its node until defeated', () => {
   const state = playingState();
-  state.research.templeData = { lizardBlockers: ['lizard:r3:p0'] };
+  placeLizardTrackGuardian(state, { id: 'track-guardian', nodeId: 'lizard:r3:p0' });
   const t = track('lizard');
   const b = bridge('lizard:test');
   const rules = templeRulesFor('lizard');
   assert.throws(() => rules.validateMove?.({ state, track: t, playerId: 'p1', token: 'magnifying', from: 'from', to: 'lizard:r3:p0', bridge: b }), /blocked/);
-  assert.doesNotThrow(() => rules.validateMove?.({ state, track: t, playerId: 'p1', token: 'magnifying', from: 'from', to: 'lizard:r2:p0', bridge: b }));
+  defeatLizardTrackGuardian(state, 'track-guardian');
+  assert.doesNotThrow(() => rules.validateMove?.({ state, track: t, playerId: 'p1', token: 'magnifying', from: 'from', to: 'lizard:r3:p0', bridge: b }));
 });
