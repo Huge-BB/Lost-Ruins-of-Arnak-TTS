@@ -14,6 +14,10 @@ export interface Resources {
   fear: number;
 }
 
+export type CardEffect =
+  | { type: 'GAIN_RESOURCE'; resource: Resource; amount: number }
+  | { type: 'DRAW_CARD'; amount: number };
+
 export interface CardDefinition {
   id: CardId;
   name: string;
@@ -85,12 +89,14 @@ export interface GameState {
 
 export interface EngineContext {
   cards: Record<CardId, CardDefinition>;
+  cardEffects?: Record<CardId, CardEffect[]>;
 }
 
 export type GameAction =
   | { type: 'START_GAME'; seed?: string }
   | { type: 'END_TURN'; playerId: PlayerId }
   | { type: 'PASS'; playerId: PlayerId }
+  | { type: 'PLAY_CARD'; playerId: PlayerId; cardId: CardId }
   | { type: 'PLACE_WORKER'; playerId: PlayerId; siteId: string }
   | { type: 'GAIN_RESOURCE'; playerId: PlayerId; resource: Resource; amount: number }
   | { type: 'SPEND_RESOURCE'; playerId: PlayerId; resource: Resource; amount: number }
