@@ -7,17 +7,14 @@ import type {
 
 export type GeneratedResearchTracks = Partial<Record<ResearchBoardId, ResearchTrackDefinition>>;
 
-/**
- * Merge machine-generated TTS topology with the human-maintained overlay.
- * Consumers should use the returned definitions instead of raw generated JSON.
- */
+/** Merge generated TTS topology with any board-specific manual overlay. */
 export function buildResearchTracks(
   generated: GeneratedResearchTracks,
   manual: ResearchManualData,
   options: { requireVerifiedEntries?: boolean } = {},
 ): GeneratedResearchTracks {
   const result: GeneratedResearchTracks = {};
-  for (const boardId of ['bird', 'snake'] as const) {
+  for (const boardId of ['bird', 'snake', 'monkey', 'lizard'] as const) {
     const track = generated[boardId];
     if (!track) continue;
     result[boardId] = applyResearchManualData(track, manual, {
