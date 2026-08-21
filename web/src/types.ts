@@ -4,6 +4,7 @@ export type PlayerColor = 'Yellow' | 'Green' | 'Blue' | 'Red';
 export type Resource = 'tablet' | 'arrowhead' | 'jewel' | 'coin' | 'compass' | 'fear';
 export type CardType = 'Item' | 'Artifact' | 'Fear' | 'Starter' | 'Other';
 export type TravelIcon = 'boot' | 'car' | 'boat' | 'plane';
+export type TravelCost = Partial<Record<TravelIcon, number>>;
 
 export interface Resources {
   tablet: number;
@@ -26,7 +27,7 @@ export interface CardDefinition {
   color?: string;
   cost?: number;
   points?: number;
-  travel?: Partial<Record<TravelIcon, number>>;
+  travel?: TravelCost;
   image?: {
     faceUrl: string;
     backUrl?: string;
@@ -58,6 +59,7 @@ export interface SiteState {
   occupiedBy?: PlayerId;
   guardian?: string;
   idolSlots: number;
+  travelCost?: TravelCost;
 }
 
 export interface MarketState {
@@ -97,7 +99,7 @@ export type GameAction =
   | { type: 'END_TURN'; playerId: PlayerId }
   | { type: 'PASS'; playerId: PlayerId }
   | { type: 'PLAY_CARD'; playerId: PlayerId; cardId: CardId }
-  | { type: 'PLACE_WORKER'; playerId: PlayerId; siteId: string }
+  | { type: 'PLACE_WORKER'; playerId: PlayerId; siteId: string; paymentCardIds?: CardId[] }
   | { type: 'GAIN_RESOURCE'; playerId: PlayerId; resource: Resource; amount: number }
   | { type: 'SPEND_RESOURCE'; playerId: PlayerId; resource: Resource; amount: number }
   | { type: 'ADVANCE_RESEARCH'; playerId: PlayerId; track: 'magnifying' | 'journal'; amount?: number }
