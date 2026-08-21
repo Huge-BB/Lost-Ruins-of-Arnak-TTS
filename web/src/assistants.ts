@@ -10,6 +10,17 @@ export function buildBaseAssistantPool(assistants: Record<string, AssistantDefin
   return ids;
 }
 
+function splitThreeStacksLikeTts(cards: string[]): string[][] {
+  const stackCount = Math.floor(cards.length / 3 + 0.5);
+  const first = cards.slice(0, stackCount);
+  const second = cards.slice(stackCount, stackCount * 2);
+  const third = cards.slice(stackCount * 2);
+  if (first.length === 0 || second.length === 0 || third.length === 0) {
+    throw new Error('Assistant supply cannot form three stacks');
+  }
+  return [first, second, third];
+}
+
 export function prepareAssistantSupply(
   assistants: Record<string, AssistantDefinition>,
   board: ResearchBoardId,
@@ -21,21 +32,15 @@ export function prepareAssistantSupply(
   }
 
   const shuffled = shuffleWithSeed(buildBaseAssistantPool(assistants), `${seed}:assistants`);
-
   if (board === 'bird') {
-    return {
-      stacks: [shuffled.slice(0, 4), shuffled.slice(4, 8), shuffled.slice(8, 12)],
-      specialStack: [],
-    };
+    return { stacks: splitThreeStacksLikeTts(shuffled), specialStack: [] };
   }
 
-  // The Snake board removes one assistant per player into its special area before
-  // the normal supply stacks are formed. Exact remainder distribution stays
-  // intentionally unimplemented until TTS Deck.cut behavior is mirrored.
-  return {
-    stacks: [],
-    specialStack: shuffled.slice(0, playerCount),
-  };
+  // Snake Temple removes one assistant per seated player into its special deck,
+  // then the original mod cuts the remaining deck twice at round(remaining / 3).
+  const specialStack = shuffled.slice(0, playerCount);
+  const remaining = shuffled.slice(playerCount);
+  return { stacks: splitThreeStacksLikeTts(remaining), specialStack };
 }
 
 export function availableAssistantIds(supply: AssistantSupplyState): string[] {
