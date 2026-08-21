@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 import { createGame, reduce } from './engine.ts';
-import { nextLegalResearchPosition, nextResearchPosition, RESEARCH_START_POSITION, researchRowPoints, researchScore, rowGrantsAssistant } from './research.ts';
+import { nextLegalResearchPosition, nextResearchPosition, RESEARCH_START_POSITION, researchRowPoints, researchScore, rowGrantsAssistant, templeArrivalAward } from './research.ts';
 import type { EngineContext, ResearchTrackDefinition } from './types.ts';
 
 async function loadTracks(): Promise<Record<string, ResearchTrackDefinition>> {
@@ -76,6 +76,12 @@ test('only the magnifying glass can enter the temple', async () => {
   assert.throws(() => nextResearchPosition(bird, 'journal', topRow), /cannot advance farther/);
   assert.equal(researchRowPoints(bird, 'magnifying', bird.rows.length), 0);
   assert.throws(() => researchRowPoints(bird, 'journal', bird.rows.length), /Journal cannot enter the temple/);
+});
+
+test('temple arrival awards preserve the TTS research-track order', async () => {
+  const { bird } = await loadTracks();
+  assert.deepEqual([0, 1, 2, 3].map(index => templeArrivalAward(bird, index)), [23, 21, 20, 19]);
+  assert.throws(() => templeArrivalAward(bird, 4), /No temple arrival award/);
 });
 
 test('assistant-row metadata can be queried independently of TTS coordinates', async () => {
