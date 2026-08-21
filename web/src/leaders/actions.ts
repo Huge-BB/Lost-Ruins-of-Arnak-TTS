@@ -1,3 +1,4 @@
+import { grantTemporaryTravel } from '../action-window.ts';
 import { applyCardEffects, getCardEffects } from '../effects.ts';
 import { resolveRewardCode } from '../site-rewards.ts';
 import type { CardId, EngineContext, GameState, PlayerId } from '../types.ts';
@@ -21,9 +22,8 @@ export function falconerReturnEagle(state:GameState,playerId:PlayerId,rewardPosi
   const next=structuredClone(state);const {player,leader}=requireLeader(next,playerId,'falconer');const current=Number(leader.data.eaglePosition??0);
   if(!Number.isInteger(rewardPosition)||rewardPosition<1||rewardPosition>current)throw new Error(`Falconer cannot claim eagle reward ${rewardPosition} from position ${current}`);
   leader.data.eaglePosition=0;
-  // The first two spaces are free actions: coin; then tablet plus one plane travel icon.
   if(rewardPosition===1){player.resources.coin+=1;return next;}
-  if(rewardPosition===2){player.resources.tablet+=1;next.pendingRewards.push({playerId,sourceId:'leader:falconer:eagle',code:'leader:TRAVEL_CREDIT',payload:{travel:{plane:1},freeAction:true}});return next;}
+  if(rewardPosition===2){player.resources.tablet+=1;return grantTemporaryTravel(next,playerId,{plane:1});}
   next.pendingRewards.push({playerId,sourceId:'leader:falconer:eagle',code:'leader:FALCONER_EAGLE_REWARD',payload:{rewardPosition,mainAction:true}});return next;
 }
 
