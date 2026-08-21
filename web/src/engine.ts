@@ -1,6 +1,14 @@
 import { prepareAssistantSupply } from './assistants.ts';
 import { prepareBaseGameSetup } from './cards.ts';
 import { applyCardEffects, getCardEffects } from './effects.ts';
+import { setupLeader, runLeaderRoundStart, runLeaderRoundEnd, addFearToHand } from './leaders/index.ts';
+import {
+  captainCallSpecialist,
+  explorerSpendSnack,
+  falconerReturnEagle,
+  mysticPerformRitual,
+  professorBuyArchiveArtifact,
+} from './leaders/actions.ts';
 import { advanceResearchByNode } from './research-action.ts';
 import { researchStartNode } from './research-topology.ts';
 import { nextLegalResearchPosition, RESEARCH_START_POSITION } from './research.ts';
@@ -228,21 +236,13 @@ function advanceResearch(state: GameState, action: Extract<GameAction, { type: '
     return;
   }
 
-  // Temporary compatibility path for older tests/actions while manual bridge costs are being recorded.
   const amount = action.amount ?? 1;
   if (!Number.isInteger(amount) || amount < 1) throw new Error('Research amount must be positive');
   let position = state.research[action.track][action.playerId];
   let magnifying = state.research.magnifying[action.playerId];
   let journal = state.research.journal[action.playerId];
   for (let step = 0; step < amount; step += 1) {
-    position = nextLegalResearchPosition(
-      definition,
-      action.track,
-      position,
-      magnifying,
-      journal,
-      player.rules.journalMaxLead,
-    );
+    position = nextLegalResearchPosition(definition, action.track, position, magnifying, journal, player.rules.journalMaxLead);
     if (action.track === 'magnifying') magnifying = position;
     else journal = position;
   }
@@ -250,8 +250,9 @@ function advanceResearch(state: GameState, action: Extract<GameAction, { type: '
   if (action.track === 'magnifying') player.researchMagnifying = position;
   else player.researchJournal = position;
 }
-function cleanupPlayerForNextRound(state: GameState, playerId: PlayerId) {
+function cleanupPlayerForNextRound(state: GameState, playerId: PlayerId, context: EngineContext) {
   const player = state.players[playerId];
+  runLeaderRoundEnd(state, playerId, context);
   player.availableWorkers = player.workers; player.hasPassed = false;
   if (player.playedCards.length > 0) {
     const seed = `${state.setupSeed ?? 'default'}:round:${state.round}:cleanup:${playerId}`;
@@ -259,19 +260,19 @@ function cleanupPlayerForNextRound(state: GameState, playerId: PlayerId) {
     player.playedCards = [];
   }
   while (player.hand.length < 5 && player.deck.length > 0) player.hand.push(player.deck.shift()!);
+  if (player.leader?.id === 'mystic') addFearToHand(state, playerId, context);
 }
 function resolveGuardianFear(state: GameState, context: EngineContext) {
-  for (const site of Object.values(state.sites)) {
-    if (site.guardian && site.occupiedBy) addGuardianFear(state, site.occupiedBy, context);
-  }
+  for (const site of Object.values(state.sites)) if (site.guardian && site.occupiedBy) addGuardianFear(state, site.occupiedBy, context);
 }
 function finishRound(state: GameState, context: EngineContext) {
   resolveGuardianFear(state, context);
-  for (const playerId of state.playerOrder) cleanupPlayerForNextRound(state, playerId);
+  for (const playerId of state.playerOrder) cleanupPlayerForNextRound(state, playerId, context);
   for (const site of Object.values(state.sites)) delete site.occupiedBy;
   if (state.round >= MAX_ROUNDS) { state.phase = 'finished'; return; }
   advanceMarketToNextRound(state);
   state.firstPlayer = rotateFirstPlayer(state); state.currentPlayer = state.firstPlayer;
+  for (const playerId of state.playerOrder) runLeaderRoundStart(state, playerId, context);
 }
 
 export function reduce(state: GameState, action: GameAction, context: EngineContext = EMPTY_CONTEXT): GameState {
@@ -291,9 +292,7 @@ export function reduce(state: GameState, action: GameAction, context: EngineCont
       next.research.magnifyingNode = Object.fromEntries(next.playerOrder.map(id => [id, startNode]));
       next.research.journalNode = Object.fromEntries(next.playerOrder.map(id => [id, startNode]));
       setupDiscoveryDecks(next, context, seed);
-      if (context.assistants && Object.keys(context.assistants).length > 0) {
-        next.assistants = prepareAssistantSupply(context.assistants, next.research.board, next.playerOrder.length, seed);
-      }
+      if (context.assistants && Object.keys(context.assistants).length > 0) next.assistants = prepareAssistantSupply(context.assistants, next.research.board, next.playerOrder.length, seed);
       if (Object.keys(context.cards).length > 0) {
         const setup = prepareBaseGameSetup(context, next.playerOrder.length, seed);
         next.market = setup.market;
@@ -304,6 +303,14 @@ export function reduce(state: GameState, action: GameAction, context: EngineCont
           next.players[playerId].deck = playerSetup.deck;
         });
       }
+      for (const playerId of next.playerOrder) {
+        const leaderId = action.leaders?.[playerId];
+        if (leaderId) setupLeader(next, playerId, leaderId, context, seed);
+      }
+      for (const playerId of next.playerOrder) {
+        if (next.players[playerId].leader?.id === 'mystic') addFearToHand(next, playerId, context);
+        runLeaderRoundStart(next, playerId, context);
+      }
       next.phase = 'playing'; return next;
     }
     case 'GAIN_RESOURCE': addResource(next, action.playerId, action.resource, action.amount); return next;
@@ -312,31 +319,22 @@ export function reduce(state: GameState, action: GameAction, context: EngineCont
     case 'PLAY_CARD': playCard(next, action, context); return next;
     case 'PLACE_WORKER': {
       assertPlaying(next); assertCurrentPlayer(next, action.playerId);
-      const player = assertPlayer(next, action.playerId);
-      const site = next.sites[action.siteId];
-      if (!site) throw new Error(`Unknown site: ${action.siteId}`);
-      if (site.occupiedBy) throw new Error('Site is occupied');
-      if (player.availableWorkers < 1) throw new Error('No available worker');
-      payTravelFromHand(next, action.playerId, action.paymentCardIds ?? [], context, action.siteId);
-      player.availableWorkers -= 1;
-      site.occupiedBy = action.playerId;
-      resolveSite(next, action.playerId, action.siteId, context);
-      return next;
+      const player = assertPlayer(next, action.playerId); const site = next.sites[action.siteId];
+      if (!site) throw new Error(`Unknown site: ${action.siteId}`); if (site.occupiedBy) throw new Error('Site is occupied'); if (player.availableWorkers < 1) throw new Error('No available worker');
+      payTravelFromHand(next, action.playerId, action.paymentCardIds ?? [], context, action.siteId); player.availableWorkers -= 1; site.occupiedBy = action.playerId; resolveSite(next, action.playerId, action.siteId, context); return next;
     }
     case 'DISCOVER_SITE': discoverSite(next, action, context); return next;
     case 'BUY_CARD': buyCard(next, action, context); return next;
+    case 'LEADER_CAPTAIN_SPECIALIST': assertPlaying(next); assertCurrentPlayer(next, action.playerId); return captainCallSpecialist(next, action.playerId, action.stackIndex);
+    case 'LEADER_FALCONER_RETURN_EAGLE': assertPlaying(next); assertCurrentPlayer(next, action.playerId); return falconerReturnEagle(next, action.playerId, action.rewardPosition);
+    case 'LEADER_PROFESSOR_BUY_ARCHIVE': assertPlaying(next); assertCurrentPlayer(next, action.playerId); return professorBuyArchiveArtifact(next, action.playerId, action.cardId, context, action.suitcaseCompass ?? 0);
+    case 'LEADER_EXPLORER_SPEND_SNACK': assertPlaying(next); assertCurrentPlayer(next, action.playerId); return explorerSpendSnack(next, action.playerId, action.snackId, action.siteId);
+    case 'LEADER_MYSTIC_RITUAL': assertPlaying(next); assertCurrentPlayer(next, action.playerId); return mysticPerformRitual(next, action.playerId, action.fearCount);
     case 'END_TURN': {
-      assertPlaying(next); assertCurrentPlayer(next, action.playerId);
-      const following = nextActivePlayer(next, action.playerId);
-      if (!following) throw new Error('All players have passed; round should already be finished');
-      next.currentPlayer = following; return next;
+      assertPlaying(next); assertCurrentPlayer(next, action.playerId); const following = nextActivePlayer(next, action.playerId); if (!following) throw new Error('All players have passed; round should already be finished'); next.currentPlayer = following; return next;
     }
     case 'PASS': {
-      assertPlaying(next); assertCurrentPlayer(next, action.playerId);
-      next.players[action.playerId].hasPassed = true;
-      const following = nextActivePlayer(next, action.playerId);
-      if (following) next.currentPlayer = following; else finishRound(next, context);
-      return next;
+      assertPlaying(next); assertCurrentPlayer(next, action.playerId); next.players[action.playerId].hasPassed = true; const following = nextActivePlayer(next, action.playerId); if (following) next.currentPlayer = following; else finishRound(next, context); return next;
     }
   }
 }
