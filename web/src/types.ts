@@ -19,6 +19,14 @@ export type CardEffect =
   | { type: 'GAIN_RESOURCE'; resource: Resource; amount: number }
   | { type: 'DRAW_CARD'; amount: number };
 
+export interface SpriteImage {
+  faceUrl: string;
+  backUrl?: string;
+  sheetWidth?: number;
+  sheetHeight?: number;
+  cardIndex?: number;
+}
+
 export interface CardDefinition {
   id: CardId;
   name: string;
@@ -28,13 +36,21 @@ export interface CardDefinition {
   cost?: number;
   points?: number;
   travel?: TravelCost;
-  image?: {
-    faceUrl: string;
-    backUrl?: string;
-    sheetWidth?: number;
-    sheetHeight?: number;
-    cardIndex?: number;
-  };
+  image?: SpriteImage;
+}
+
+export interface SiteDefinition {
+  id: string;
+  level: 1 | 2;
+  rewardCode: string;
+  expansion: string;
+  image?: SpriteImage;
+}
+
+export interface PendingReward {
+  playerId: PlayerId;
+  sourceId: string;
+  code: string;
 }
 
 export interface PlayerState {
@@ -56,6 +72,7 @@ export interface PlayerState {
 export interface SiteState {
   id: string;
   level: 1 | 2;
+  tileId?: string;
   occupiedBy?: PlayerId;
   guardian?: string;
   idolSlots: number;
@@ -87,11 +104,13 @@ export interface GameState {
   sites: Record<string, SiteState>;
   market: MarketState;
   research: ResearchState;
+  pendingRewards: PendingReward[];
 }
 
 export interface EngineContext {
   cards: Record<CardId, CardDefinition>;
   cardEffects?: Record<CardId, CardEffect[]>;
+  sites?: Record<string, SiteDefinition>;
 }
 
 export type GameAction =
