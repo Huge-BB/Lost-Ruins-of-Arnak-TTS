@@ -15,6 +15,23 @@ function validateCost(cost, label) {
   }
 }
 
+function validateReward(reward, label) {
+  if (reward == null) return;
+  if (typeof reward !== 'object' || typeof reward.type !== 'string') throw new Error(`${label}: reward must have a string type`);
+  if (reward.type === 'CLAIM_ASSISTANT' && reward.level !== 'silver') {
+    throw new Error(`${label}: CLAIM_ASSISTANT level must be silver`);
+  }
+  if (reward.type === 'UPGRADE_ASSISTANT' && reward.level !== 'gold') {
+    throw new Error(`${label}: UPGRADE_ASSISTANT level must be gold`);
+  }
+  if (reward.type === 'GAIN_RESOURCE') {
+    if (!['coin', 'compass', 'tablet', 'arrowhead', 'jewel', 'fear'].includes(reward.resource)) {
+      throw new Error(`${label}: unsupported GAIN_RESOURCE resource`);
+    }
+    if (!Number.isInteger(reward.amount) || reward.amount < 0) throw new Error(`${label}: invalid GAIN_RESOURCE amount`);
+  }
+}
+
 let verifiedBridgeCount = 0;
 let totalBridgeCount = 0;
 
@@ -22,6 +39,13 @@ for (const boardId of ['bird', 'snake']) {
   const track = generated[boardId];
   const overlay = manual.boards?.[boardId] ?? { bridges: [], nodeOverrides: [], nodeRewards: [] };
   if (!track) throw new Error(`Missing generated research track: ${boardId}`);
+
+  if (overlay.templeArrivalPoints !== undefined) {
+    if (!Array.isArray(overlay.templeArrivalPoints) || overlay.templeArrivalPoints.length !== 4
+      || overlay.templeArrivalPoints.some(value => !Number.isInteger(value) || value < 0)) {
+      throw new Error(`${boardId}: templeArrivalPoints must contain four non-negative integers`);
+    }
+  }
 
   const nodeIds = new Set(allNodes(track).map(node => node.id));
   const bridgeIds = new Set((track.bridges ?? []).map(bridge => `${bridge.from}->${bridge.to}`));
@@ -37,6 +61,7 @@ for (const boardId of ['bird', 'snake']) {
     if (!bridgeIds.has(id) && !isTempleEntry) throw new Error(`${boardId}: manual bridge not found in generated topology: ${id}`);
     if (isTempleEntry && !bridgeIds.has(id)) totalBridgeCount += 1;
     validateCost(bridge.cost, `${boardId}:${id}`);
+    validateReward(bridge.reward, `${boardId}:${id}`);
     if (bridge.verified === true) verifiedBridgeCount += 1;
   }
 
@@ -54,8 +79,14 @@ for (const boardId of ['bird', 'snake']) {
     }
   }
 
+  const seenRewards = new Set();
   for (const reward of overlay.nodeRewards ?? []) {
     if (!nodeIds.has(reward.node)) throw new Error(`${boardId}: unknown reward node ${reward.node}`);
+    const id = `${reward.node}:${reward.token ?? 'any'}`;
+    if (seenRewards.has(id)) throw new Error(`${boardId}: duplicate node reward ${id}`);
+    seenRewards.add(id);
+    if (reward.token !== undefined && !['magnifying', 'journal'].includes(reward.token)) throw new Error(`${boardId}:${id}: invalid research token`);
+    validateReward(reward.reward, `${boardId}:${id}`);
   }
 }
 
