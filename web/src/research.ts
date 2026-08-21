@@ -38,6 +38,20 @@ export function researchRowPoints(
   return token === 'magnifying' ? row.magnifyingPoints : row.journalPoints;
 }
 
+export function researchScore(
+  track: ResearchTrackDefinition,
+  magnifyingPosition: number,
+  journalPosition: number,
+  templeArrivalPoints = 0,
+): number {
+  if (!Number.isInteger(templeArrivalPoints) || templeArrivalPoints < 0) {
+    throw new Error('Temple arrival points must be a non-negative integer');
+  }
+  return researchRowPoints(track, 'magnifying', magnifyingPosition)
+    + researchRowPoints(track, 'journal', journalPosition)
+    + templeArrivalPoints;
+}
+
 export function rowGrantsAssistant(track: ResearchTrackDefinition, position: number): boolean {
   if (position < 0 || position >= track.rows.length) return false;
   return track.rows[position].grantsAssistant;
