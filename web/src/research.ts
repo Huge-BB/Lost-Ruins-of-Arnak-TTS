@@ -1,0 +1,44 @@
+import type { ResearchToken, ResearchTrackDefinition } from './types.ts';
+
+/**
+ * Research position convention:
+ * -1 = printed starting space below the track
+ *  0..rows.length-1 = scored research rows from bottom toward the temple
+ *  rows.length = temple reached (magnifying glass only)
+ */
+export const RESEARCH_START_POSITION = -1;
+
+export function nextResearchPosition(
+  track: ResearchTrackDefinition,
+  token: ResearchToken,
+  currentPosition: number,
+): number {
+  if (!Number.isInteger(currentPosition) || currentPosition < RESEARCH_START_POSITION) {
+    throw new Error(`Invalid research position: ${currentPosition}`);
+  }
+
+  const maxPosition = token === 'magnifying' ? track.rows.length : track.rows.length - 1;
+  if (currentPosition >= maxPosition) throw new Error(`${token} cannot advance farther`);
+  return currentPosition + 1;
+}
+
+export function researchRowPoints(
+  track: ResearchTrackDefinition,
+  token: ResearchToken,
+  position: number,
+): number {
+  if (position === RESEARCH_START_POSITION) return 0;
+  if (position === track.rows.length) {
+    if (token !== 'magnifying') throw new Error('Journal cannot enter the temple');
+    // Temple-place points are awarded separately because they depend on arrival order.
+    return 0;
+  }
+  const row = track.rows[position];
+  if (!row) throw new Error(`Invalid research position: ${position}`);
+  return token === 'magnifying' ? row.magnifyingPoints : row.journalPoints;
+}
+
+export function rowGrantsAssistant(track: ResearchTrackDefinition, position: number): boolean {
+  if (position < 0 || position >= track.rows.length) return false;
+  return track.rows[position].grantsAssistant;
+}
