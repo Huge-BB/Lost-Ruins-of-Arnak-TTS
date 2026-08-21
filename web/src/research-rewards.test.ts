@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame } from './engine.ts';
 import { advanceResearchByNode } from './research-action.ts';
-import type { ResearchTrackDefinition } from './types.ts';
+import { resolveResearchReward } from './research-rewards.ts';
+import type { EngineContext, ResearchTrackDefinition } from './types.ts';
 
 function state() {
   const game = createGame(['p1']);
@@ -58,10 +59,30 @@ test('assistant research reward is exposed as a structured pending choice', () =
   assert.deepEqual(game.pendingRewards[0].payload, { type: 'CLAIM_ASSISTANT', level: 'silver' });
 });
 
+test('Snake GAIN_FEAR_CARD adds a base-game Fear card to played cards', () => {
+  const game = state();
+  const context: EngineContext = {
+    cards: { fear: { id: 'fear', name: 'Fear', type: 'Fear', expansion: 'Base Game' } },
+  };
+  resolveResearchReward(game, 'p1', 'snake:test', { type: 'GAIN_FEAR_CARD', amount: 1 }, context);
+  assert.deepEqual(game.players.p1.playedCards, ['fear']);
+});
+
+test('Monkey REFRESH_ASSISTANTS all readies both assistants', () => {
+  const game = state();
+  game.players.p1.assistants = [
+    { id: 'a', level: 'silver', exhausted: true },
+    { id: 'b', level: 'gold', exhausted: true },
+  ];
+  resolveResearchReward(game, 'p1', 'monkey:test', { type: 'REFRESH_ASSISTANTS', amount: 'all' });
+  assert.deepEqual(game.players.p1.assistants.map(assistant => assistant.exhausted), [false, false]);
+});
+
 test('SEQUENCE resolves deterministic children and leaves choices pending', () => {
   const game = state();
   game.players.p1.deck = ['card-a'];
-  track.bridges![0].rewards = [{
+  const sequenceTrack = structuredClone(track);
+  sequenceTrack.bridges![0].rewards = [{
     type: 'SEQUENCE',
     rewards: [
       { type: 'GAIN_RESOURCE', resource: 'coin', amount: 1 },
@@ -72,7 +93,7 @@ test('SEQUENCE resolves deterministic children and leaves choices pending', () =
       ] },
     ],
   }];
-  advanceResearchByNode(game, track, { playerId: 'p1', token: 'magnifying', toNodeId: 'bird:r0:p0' });
+  advanceResearchByNode(game, sequenceTrack, { playerId: 'p1', token: 'magnifying', toNodeId: 'bird:r0:p0' });
   assert.equal(game.players.p1.resources.coin, 3);
   assert.deepEqual(game.players.p1.hand, ['card-a']);
   assert.equal(game.pendingRewards[0].code, 'research:CHOOSE');
