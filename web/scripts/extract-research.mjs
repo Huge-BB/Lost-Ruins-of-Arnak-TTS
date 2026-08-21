@@ -14,6 +14,12 @@ function sectionBetween(startMarker, endMarker) {
   return lua.slice(start, end);
 }
 
+function sectionFrom(startMarker) {
+  const start = lua.indexOf(startMarker);
+  if (start < 0) throw new Error(`Could not locate ${startMarker} section`);
+  return lua.slice(start);
+}
+
 function extractBalancedBlock(text, startIndex) {
   const open = text.indexOf('{', startIndex);
   if (open < 0) throw new Error('Expected opening brace');
@@ -77,7 +83,7 @@ function extractTrack(name, section) {
   const boardId = name.toLowerCase();
   const rawRows = splitTopLevelTables(extractRowsBlock(section));
   const scoredRows = rawRows.filter(row => /magnifying\s*=/.test(row));
-  if (scoredRows.length !== 7) throw new Error(`${name} expected 7 scored research rows, got ${scoredRows.length}`);
+  if (scoredRows.length === 0) throw new Error(`${name} has no scored research rows`);
 
   const rowsTopDown = scoredRows.map((rowBlock) => {
     const magnifyingMatch = rowBlock.match(/magnifying\s*=\s*(\d+)/);
@@ -127,22 +133,21 @@ function extractTrack(name, section) {
     });
   }
 
-  // Arrival-order values differ by research board and are maintained in the
-  // verified manual overlay. Do not infer them from TTS automation data.
   return { id: boardId, name, rows, bridges };
 }
 
 const result = {
   bird: extractTrack('Bird', sectionBetween('-- Bird Temple', '-- Snake Temple')),
   snake: extractTrack('Snake', sectionBetween('-- Snake Temple', '-- Monkey Temple')),
+  monkey: extractTrack('Monkey', sectionBetween('-- Monkey Temple', '-- Lizard Temple')),
+  lizard: extractTrack('Lizard', sectionFrom('-- Lizard Temple')),
 };
 
 const checklist = {
-  $schemaVersion: 2,
+  $schemaVersion: 3,
   notes: [
     'Generated from ResearchTrackData.ttslua. Do not edit topology here by hand.',
-    'Copy verified costs/rewards and any irregular node-level overrides into research-manual-data.json.',
-    'Record each board templeArrivalPoints separately in research-manual-data.json as first/second/third/fourth place values.',
+    'Bird/Snake manual overlays contain verified base-game costs. Monkey/Lizard special rules are temple-specific.',
     'researchLevel defaults to rowIndex. Override only when one printed space spans/skips logical levels.',
   ],
   boards: Object.fromEntries(Object.entries(result).map(([boardId, track]) => [boardId, {
@@ -150,8 +155,8 @@ const checklist = {
     nodes: track.rows.flatMap(row => row.nodes).map(node => ({ ...node, verified: false })),
     bridges: track.bridges.map(bridge => ({
       ...bridge,
-      cost: { coin: 0, compass: 0, tablet: 0, arrowhead: 0, jewel: 0 },
-      reward: null,
+      cost: {},
+      rewards: [],
       verified: false,
     })),
   }])),
@@ -161,5 +166,5 @@ await mkdir(dirname(outputPath), { recursive: true });
 await mkdir(dirname(checklistPath), { recursive: true });
 await writeFile(outputPath, `${JSON.stringify(result, null, 2)}\n`);
 await writeFile(checklistPath, `${JSON.stringify(checklist, null, 2)}\n`);
-console.log(`Extracted ${Object.keys(result).length} base research tracks to ${outputPath}`);
+console.log(`Extracted ${Object.keys(result).length} research tracks to ${outputPath}`);
 console.log(`Generated research bridge checklist at ${checklistPath}`);
