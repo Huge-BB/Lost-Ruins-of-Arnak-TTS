@@ -10,14 +10,14 @@ function windowFor(state:GameState,playerId:PlayerId):ActionWindowState {
   return created;
 }
 
-/** Add travel icons created at any point in the current turn's action window. The source may be a main action or a free/quick action. */
+/** Add travel icons as soon as an effect resolves. The source may be a main action or a free/quick action. */
 export function grantTemporaryTravel(state:GameState,playerId:PlayerId,travel:TravelCost):GameState {
   const next=structuredClone(state),window=windowFor(next,playerId);
   for(const icon of ICONS){const amount=travel[icon]??0;if(!Number.isInteger(amount)||amount<0)throw new Error(`Invalid temporary ${icon} amount`);if(amount)window.temporaryTravel[icon]=(window.temporaryTravel[icon]??0)+amount;}
   return next;
 }
 
-/** Consume exact icons for a free/quick action later in the same action window. Main-action payment code must never call this function. */
+/** Consume travel icons that were produced earlier in the same turn window. Any later action may consume them, including a main action. */
 export function consumeTemporaryTravel(state:GameState,playerId:PlayerId,cost:TravelCost):GameState {
   const next=structuredClone(state),window=windowFor(next,playerId);
   for(const icon of ICONS){const need=cost[icon]??0;if(!Number.isInteger(need)||need<0)throw new Error(`Invalid temporary ${icon} cost`);if((window.temporaryTravel[icon]??0)<need)throw new Error(`Insufficient temporary ${icon}`);}
