@@ -2,6 +2,7 @@ import type {
   ResearchBoardId,
   ResearchBridgeDefinition,
   ResearchManualData,
+  ResearchNodeDefinition,
   ResearchTrackDefinition,
   ResourceCost,
 } from './types.ts';
@@ -22,6 +23,23 @@ function bridgeKey(from: string, to: string) {
   return `${from}->${to}`;
 }
 
+function allNodes(track: ResearchTrackDefinition): ResearchNodeDefinition[] {
+  return track.rows.flatMap(row => row.nodes ?? []);
+}
+
+function validateNodeOverride(node: ResearchNodeDefinition, label: string) {
+  if (!Number.isInteger(node.researchLevel) || node.researchLevel < 0) {
+    throw new Error(`${label} has invalid researchLevel`);
+  }
+  if (node.spansLevels !== undefined) {
+    if (node.spansLevels.length === 0 || node.spansLevels.some(level => !Number.isInteger(level) || level < 0)) {
+      throw new Error(`${label} has invalid spansLevels`);
+    }
+    const unique = new Set(node.spansLevels);
+    if (unique.size !== node.spansLevels.length) throw new Error(`${label} has duplicate spansLevels`);
+  }
+}
+
 export function applyResearchManualData(
   track: ResearchTrackDefinition,
   manualData: ResearchManualData,
@@ -33,14 +51,27 @@ export function applyResearchManualData(
 
   const requireVerified = options.requireVerified ?? false;
   const next = structuredClone(track);
+  const nodes = new Map(allNodes(next).map(node => [node.id, node]));
   const bridges = next.bridges ?? [];
   const topology = new Map(bridges.map(bridge => [bridgeKey(bridge.from, bridge.to), bridge]));
-  const seen = new Set<string>();
+  const seenBridges = new Set<string>();
+  const seenNodes = new Set<string>();
+
+  for (const manualNode of overlay.nodeOverrides ?? []) {
+    if (seenNodes.has(manualNode.node)) throw new Error(`Duplicate manual research node override: ${manualNode.node}`);
+    seenNodes.add(manualNode.node);
+    const target = nodes.get(manualNode.node);
+    if (!target) throw new Error(`Manual research node does not exist in ${boardId} topology: ${manualNode.node}`);
+    if (requireVerified && !manualNode.verified) throw new Error(`Research node is not verified: ${manualNode.node}`);
+    if (manualNode.researchLevel !== undefined) target.researchLevel = manualNode.researchLevel;
+    if (manualNode.spansLevels !== undefined) target.spansLevels = [...manualNode.spansLevels];
+    validateNodeOverride(target, manualNode.node);
+  }
 
   for (const manualBridge of overlay.bridges) {
     const key = bridgeKey(manualBridge.from, manualBridge.to);
-    if (seen.has(key)) throw new Error(`Duplicate manual research bridge: ${key}`);
-    seen.add(key);
+    if (seenBridges.has(key)) throw new Error(`Duplicate manual research bridge: ${key}`);
+    seenBridges.add(key);
 
     const target = topology.get(key);
     if (!target) throw new Error(`Manual research bridge does not exist in ${boardId} topology: ${key}`);
@@ -63,6 +94,12 @@ export function findResearchBridge(
   const bridge = (track.bridges ?? []).find(candidate => candidate.from === from && candidate.to === to);
   if (!bridge) throw new Error(`Illegal research bridge: ${from}->${to}`);
   return bridge;
+}
+
+export function findResearchNode(track: ResearchTrackDefinition, nodeId: string): ResearchNodeDefinition {
+  const node = allNodes(track).find(candidate => candidate.id === nodeId);
+  if (!node) throw new Error(`Unknown research node: ${nodeId}`);
+  return node;
 }
 
 export function assertVerifiedResearchBridge(bridge: ResearchBridgeDefinition) {
