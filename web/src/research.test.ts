@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 import { createGame, reduce } from './engine.ts';
-import { nextResearchPosition, RESEARCH_START_POSITION, researchRowPoints, rowGrantsAssistant } from './research.ts';
+import { nextResearchPosition, RESEARCH_START_POSITION, researchRowPoints, researchScore, rowGrantsAssistant } from './research.ts';
 import type { EngineContext, ResearchTrackDefinition } from './types.ts';
 
 async function loadTracks(): Promise<Record<string, ResearchTrackDefinition>> {
@@ -66,6 +66,12 @@ test('assistant-row metadata can be queried independently of TTS coordinates', a
   assert.equal(rowGrantsAssistant(bird, 0), true);
   assert.equal(rowGrantsAssistant(bird, 4), false);
   assert.equal(rowGrantsAssistant(bird, RESEARCH_START_POSITION), false);
+});
+
+test('researchScore combines both token rows and separate temple-arrival points', async () => {
+  const { bird } = await loadTracks();
+  assert.equal(researchScore(bird, 4, 3), 13);
+  assert.equal(researchScore(bird, bird.rows.length, 6, 23), 33);
 });
 
 test('ADVANCE_RESEARCH moves the selected token from the printed start onto row zero', async () => {
