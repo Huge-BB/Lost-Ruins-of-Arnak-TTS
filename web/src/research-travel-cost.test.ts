@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGame } from './engine.ts';
+import { createGame, reduce } from './engine.ts';
 import { advanceResearchByNode } from './research-action.ts';
 import type { EngineContext, ResearchTrackDefinition } from './types.ts';
 
@@ -26,6 +26,7 @@ const context: EngineContext = {
     plane: { id: 'plane', name: 'Plane', type: 'Starter', expansion: 'test', travel: { plane: 1 } },
     boot: { id: 'boot', name: 'Boot', type: 'Starter', expansion: 'test', travel: { boot: 1 } },
   },
+  researchTracks: { monkey: track },
 };
 
 function game() {
@@ -63,4 +64,19 @@ test('invalid Monkey research travel payment leaves state unchanged', () => {
     /does not satisfy bridge cost/,
   );
   assert.deepEqual(state, before);
+});
+
+test('ADVANCE_RESEARCH reducer forwards Monkey travel payment cards and context', () => {
+  const state = game();
+  state.players.p1.hand = ['car'];
+  const next = reduce(state, {
+    type: 'ADVANCE_RESEARCH',
+    playerId: 'p1',
+    track: 'magnifying',
+    toNodeId: 'monkey:r0:p0',
+    paymentCardIds: ['car'],
+  }, context);
+  assert.deepEqual(next.players.p1.hand, []);
+  assert.deepEqual(next.players.p1.playedCards, ['car']);
+  assert.equal(next.research.magnifyingNode.p1, 'monkey:r0:p0');
 });
