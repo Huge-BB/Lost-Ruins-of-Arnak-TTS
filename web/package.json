@@ -7,7 +7,8 @@
     "extract:cards": "node scripts/extract-cards.mjs",
     "extract:sites": "node scripts/extract-sites.mjs",
     "extract:components": "node scripts/extract-components.mjs",
-    "extract:data": "npm run extract:cards && npm run extract:sites && npm run extract:components",
-    "test": "node --experimental-strip-types --test src/engine.test.ts src/cards.test.ts src/catalog.test.ts src/round.test.ts src/effects.test.ts src/travel.test.ts src/sites.test.ts src/discovery.test.ts"
+    "extract:research": "node scripts/extract-research.mjs",
+    "extract:data": "npm run extract:cards && npm run extract:sites && npm run extract:components && npm run extract:research",
+    "test": "node --experimental-strip-types --test src/engine.test.ts src/cards.test.ts src/catalog.test.ts src/round.test.ts src/effects.test.ts src/travel.test.ts src/sites.test.ts src/discovery.test.ts src/research.test.ts"
   }
 }
