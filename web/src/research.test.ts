@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
+import { createGame, reduce } from './engine.ts';
 import { nextResearchPosition, RESEARCH_START_POSITION, researchRowPoints, rowGrantsAssistant } from './research.ts';
-import type { ResearchTrackDefinition } from './types.ts';
+import type { EngineContext, ResearchTrackDefinition } from './types.ts';
 
 async function loadTracks(): Promise<Record<string, ResearchTrackDefinition>> {
   const raw = await readFile(new URL('./generated/research-tracks.json', import.meta.url), 'utf8');
@@ -65,4 +66,36 @@ test('assistant-row metadata can be queried independently of TTS coordinates', a
   assert.equal(rowGrantsAssistant(bird, 0), true);
   assert.equal(rowGrantsAssistant(bird, 4), false);
   assert.equal(rowGrantsAssistant(bird, RESEARCH_START_POSITION), false);
+});
+
+test('ADVANCE_RESEARCH moves the selected token from the printed start onto row zero', async () => {
+  const researchTracks = await loadTracks();
+  const context: EngineContext = { cards: {}, researchTracks };
+  let state = reduce(createGame(['p1']), { type: 'START_GAME' }, context);
+
+  assert.equal(state.research.magnifying.p1, RESEARCH_START_POSITION);
+  state = reduce(state, { type: 'ADVANCE_RESEARCH', playerId: 'p1', track: 'magnifying' }, context);
+
+  assert.equal(state.research.magnifying.p1, 0);
+  assert.equal(state.players.p1.researchMagnifying, 0);
+});
+
+test('START_GAME can select the Snake research board', async () => {
+  const researchTracks = await loadTracks();
+  const context: EngineContext = { cards: {}, researchTracks };
+  const state = reduce(createGame(['p1']), { type: 'START_GAME', researchBoard: 'snake' }, context);
+  assert.equal(state.research.board, 'snake');
+});
+
+test('journal cannot advance beyond its top scored row through the reducer', async () => {
+  const researchTracks = await loadTracks();
+  const context: EngineContext = { cards: {}, researchTracks };
+  let state = reduce(createGame(['p1']), { type: 'START_GAME' }, context);
+  state.research.journal.p1 = researchTracks.bird.rows.length - 1;
+  state.players.p1.researchJournal = researchTracks.bird.rows.length - 1;
+
+  assert.throws(
+    () => reduce(state, { type: 'ADVANCE_RESEARCH', playerId: 'p1', track: 'journal' }, context),
+    /cannot advance farther/,
+  );
 });
