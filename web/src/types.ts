@@ -61,6 +61,7 @@ export interface MarketState {
   artifacts: CardId[];
   itemDeck: CardId[];
   artifactDeck: CardId[];
+  exiled: CardId[];
 }
 
 export interface ResearchState {
