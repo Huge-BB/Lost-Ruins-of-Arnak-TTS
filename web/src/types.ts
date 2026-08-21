@@ -13,6 +13,7 @@ export type ResearchToken = 'magnifying' | 'journal';
 export type AssistantLevel = 'silver' | 'gold';
 export type ResearchNodeId = string;
 export type ResearchBridgeId = string;
+export type LeaderId = 'captain' | 'falconer' | 'baroness' | 'professor' | 'explorer' | 'mystic' | string;
 
 export interface Resources { tablet:number; arrowhead:number; jewel:number; coin:number; compass:number; fear:number; }
 export interface PlayerRules { journalMaxLead:number; }
@@ -54,7 +55,8 @@ export interface ResearchRewardsManualData { $schemaVersion:1; boards:Partial<Re
 export interface PendingReward { playerId:PlayerId; sourceId:string; code:string; payload?:unknown; }
 export interface PlayerIdol { id:string; faceUp:boolean; inSlot?:boolean; }
 export interface PlayerAssistant { id:string; level:AssistantLevel; exhausted:boolean; }
-export interface PlayerState { id:PlayerId; name:string; color:PlayerColor; rules:PlayerRules; resources:Resources; workers:number; availableWorkers:number; hasPassed:boolean; researchMagnifying:number; researchJournal:number; deck:CardId[]; hand:CardId[]; discard:CardId[]; playedCards:CardId[]; idols:PlayerIdol[]; assistants:PlayerAssistant[]; defeatedGuardians:string[]; }
+export interface PlayerLeaderState { id:LeaderId; data:Record<string,unknown>; }
+export interface PlayerState { id:PlayerId; name:string; color:PlayerColor; rules:PlayerRules; resources:Resources; workers:number; availableWorkers:number; hasPassed:boolean; researchMagnifying:number; researchJournal:number; deck:CardId[]; hand:CardId[]; discard:CardId[]; playedCards:CardId[]; idols:PlayerIdol[]; assistants:PlayerAssistant[]; defeatedGuardians:string[]; leader?:PlayerLeaderState; }
 export interface SiteState { id:string; level:1|2; tileId?:string; occupiedBy?:PlayerId; guardian?:string; idolSlots:number; travelCost?:TravelCost; }
 export interface DiscoveryState { level1Deck:string[]; level2Deck:string[]; guardianDeck:string[]; idolDeck:string[]; }
 export interface AssistantSupplyState { stacks:string[][]; specialStack:string[]; }
@@ -63,7 +65,7 @@ export interface ResearchState { board:ResearchBoardId; magnifying:Record<Player
 export interface GameState { version:1; phase:'setup'|'playing'|'finished'; round:number; setupSeed?:string; firstPlayer:PlayerId; currentPlayer:PlayerId; players:Record<PlayerId,PlayerState>; playerOrder:PlayerId[]; sites:Record<string,SiteState>; discovery:DiscoveryState; assistants:AssistantSupplyState; market:MarketState; research:ResearchState; pendingRewards:PendingReward[]; }
 export interface EngineContext { cards:Record<CardId,CardDefinition>; cardEffects?:Record<CardId,CardEffect[]>; sites?:Record<string,SiteDefinition>; idols?:Record<string,IdolDefinition>; guardians?:Record<string,GuardianDefinition>; assistants?:Record<string,AssistantDefinition>; researchTracks?:Partial<Record<ResearchBoardId,ResearchTrackDefinition>>; }
 export type GameAction =
- | { type:'START_GAME'; seed?:string; researchBoard?:ResearchBoardId }
+ | { type:'START_GAME'; seed?:string; researchBoard?:ResearchBoardId; leaders?:Partial<Record<PlayerId,LeaderId>> }
  | { type:'END_TURN'; playerId:PlayerId }
  | { type:'PASS'; playerId:PlayerId }
  | { type:'PLAY_CARD'; playerId:PlayerId; cardId:CardId }
@@ -76,4 +78,9 @@ export type GameAction =
  | { type:'UPGRADE_ASSISTANT'; playerId:PlayerId; assistantId:string }
  | { type:'EXHAUST_ASSISTANT'; playerId:PlayerId; assistantId:string }
  | { type:'REFRESH_ASSISTANT'; playerId:PlayerId; assistantId:string }
- | { type:'BUY_CARD'; playerId:PlayerId; cardId:CardId };
+ | { type:'BUY_CARD'; playerId:PlayerId; cardId:CardId }
+ | { type:'LEADER_CAPTAIN_SPECIALIST'; playerId:PlayerId; stackIndex:number }
+ | { type:'LEADER_FALCONER_RETURN_EAGLE'; playerId:PlayerId; rewardPosition:number }
+ | { type:'LEADER_PROFESSOR_BUY_ARCHIVE'; playerId:PlayerId; cardId:CardId; suitcaseCompass?:number }
+ | { type:'LEADER_EXPLORER_SPEND_SNACK'; playerId:PlayerId; snackId:'free'|'coin'|'compass'; siteId:string }
+ | { type:'LEADER_MYSTIC_RITUAL'; playerId:PlayerId; fearCount:2|3|4 };
