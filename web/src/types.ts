@@ -2,7 +2,7 @@ export type PlayerId = string;
 export type CardId = string;
 export type Resource = 'tablet' | 'arrowhead' | 'jewel' | 'coin' | 'compass' | 'fear';
 export type CardType = 'Item' | 'Artifact' | 'Fear' | 'Starter' | 'Other';
-export type TravelIcon = 'boot' | 'car' | 'ship' | 'plane';
+export type TravelIcon = 'boot' | 'car' | 'boat' | 'plane';
 
 export interface Resources {
   tablet: number;
@@ -18,6 +18,7 @@ export interface CardDefinition {
   name: string;
   type: CardType;
   expansion: string;
+  color?: string;
   cost?: number;
   points?: number;
   travel?: Partial<Record<TravelIcon, number>>;
