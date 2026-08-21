@@ -16,6 +16,11 @@ export type ResearchBridgeId = string;
 export interface Resources { tablet:number; arrowhead:number; jewel:number; coin:number; compass:number; fear:number; }
 export interface PlayerRules { journalMaxLead:number; }
 export type CardEffect = { type:'GAIN_RESOURCE'; resource:Resource; amount:number } | { type:'DRAW_CARD'; amount:number };
+export type ResearchReward =
+ | { type:'GAIN_RESOURCE'; resource:Resource; amount:number }
+ | { type:'CLAIM_ASSISTANT'; level:'silver' }
+ | { type:'UPGRADE_ASSISTANT'; level:'gold' }
+ | { type:string; [key:string]:unknown };
 export interface SpriteImage { faceUrl:string; backUrl?:string; sheetWidth?:number; sheetHeight?:number; cardIndex?:number; }
 export interface AssistantImage { silverUrl:string; goldUrl:string; sheetWidth:number; sheetHeight:number; cardIndex:number; uniqueBack:boolean; }
 export interface CardDefinition { id:CardId; name:string; type:CardType; expansion:string; color?:string; cost?:number; points?:number; travel?:TravelCost; image?:SpriteImage; }
@@ -23,17 +28,17 @@ export interface SiteDefinition { id:string; level:1|2; rewardCode:string; expan
 export interface IdolDefinition { id:string; rewardCode:string; expansion:string; image?:SpriteImage; }
 export interface GuardianDefinition { id:string; expansion:string; image?:SpriteImage; }
 export interface AssistantDefinition { id:string; expansion:string; image:AssistantImage; }
-export interface ResearchNodeRewardDefinition { token?:ResearchToken; reward:unknown; verified:boolean; }
+export interface ResearchNodeRewardDefinition { token?:ResearchToken; reward:ResearchReward; verified:boolean; }
 export interface ResearchNodeDefinition { id:ResearchNodeId; rowIndex:number; pathIndex:number; researchLevel:number; spansLevels?:number[]; rewards?:ResearchNodeRewardDefinition[]; }
-export interface ResearchBridgeDefinition { id:ResearchBridgeId; from:ResearchNodeId; to:ResearchNodeId; cost?:ResourceCost; reward?:unknown; verified?:boolean; }
+export interface ResearchBridgeDefinition { id:ResearchBridgeId; from:ResearchNodeId; to:ResearchNodeId; cost?:ResourceCost; reward?:ResearchReward; verified?:boolean; }
 export interface ResearchRowDefinition { magnifyingPoints:number; journalPoints:number; grantsAssistant:boolean; nodes?:ResearchNodeDefinition[]; }
-export interface ResearchTrackDefinition { id:ResearchBoardId; name:string; rows:ResearchRowDefinition[]; bridges?:ResearchBridgeDefinition[]; /** Human-verified points for 1st/2nd/3rd/4th arrival; undefined until recorded. */ templeArrivalPoints?: [number, number, number, number]; }
+export interface ResearchTrackDefinition { id:ResearchBoardId; name:string; rows:ResearchRowDefinition[]; bridges?:ResearchBridgeDefinition[]; templeArrivalPoints?: [number, number, number, number]; }
 export interface ResearchManualNodeOverride { node:ResearchNodeId; researchLevel?:number; spansLevels?:number[]; verified:boolean; comment?:string; }
-export interface ResearchManualNodeReward { node:ResearchNodeId; token?:ResearchToken; reward:unknown; verified:boolean; comment?:string; }
-export interface ResearchManualBridge { from:ResearchNodeId; to:ResearchNodeId; cost:ResourceCost; reward?:unknown; verified:boolean; comment?:string; }
+export interface ResearchManualNodeReward { node:ResearchNodeId; token?:ResearchToken; reward:ResearchReward; verified:boolean; comment?:string; }
+export interface ResearchManualBridge { from:ResearchNodeId; to:ResearchNodeId; cost:ResourceCost; reward?:ResearchReward; verified:boolean; comment?:string; }
 export interface ResearchManualBoardData { bridges:ResearchManualBridge[]; nodeOverrides?:ResearchManualNodeOverride[]; nodeRewards:ResearchManualNodeReward[]; templeArrivalPoints?: [number, number, number, number]; }
 export interface ResearchManualData { $schemaVersion:1|2; boards:Partial<Record<ResearchBoardId, ResearchManualBoardData>>; }
-export interface PendingReward { playerId:PlayerId; sourceId:string; code:string; }
+export interface PendingReward { playerId:PlayerId; sourceId:string; code:string; payload?:unknown; }
 export interface PlayerIdol { id:string; faceUp:boolean; }
 export interface PlayerAssistant { id:string; level:AssistantLevel; exhausted:boolean; }
 export interface PlayerState { id:PlayerId; name:string; color:PlayerColor; rules:PlayerRules; resources:Resources; workers:number; availableWorkers:number; hasPassed:boolean; researchMagnifying:number; researchJournal:number; deck:CardId[]; hand:CardId[]; discard:CardId[]; playedCards:CardId[]; idols:PlayerIdol[]; assistants:PlayerAssistant[]; defeatedGuardians:string[]; }
