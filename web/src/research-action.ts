@@ -1,4 +1,5 @@
 import { assertVerifiedResearchBridge, findResearchBridge, findResearchNode } from './research-manual.ts';
+import { resolveResearchNodeRewards, resolveResearchReward } from './research-rewards.ts';
 import { assertLegalResearchNodeMove, researchStartNode } from './research-topology.ts';
 import type {
   GameState,
@@ -23,9 +24,7 @@ function assertCanPay(state: GameState, playerId: PlayerId, cost: ResourceCost) 
 
 function pay(state: GameState, playerId: PlayerId, cost: ResourceCost) {
   const player = state.players[playerId];
-  for (const resource of COST_RESOURCES) {
-    player.resources[resource] -= cost[resource] ?? 0;
-  }
+  for (const resource of COST_RESOURCES) player.resources[resource] -= cost[resource] ?? 0;
 }
 
 export interface NodeResearchMove {
@@ -34,12 +33,6 @@ export interface NodeResearchMove {
   toNodeId: ResearchNodeId;
 }
 
-/**
- * Applies one physical research move. The generated TTS topology decides whether
- * the move exists; the human-maintained overlay decides its verified cost.
- *
- * This mutates `state` only after every validation and payment check succeeds.
- */
 export function advanceResearchByNode(
   state: GameState,
   track: ResearchTrackDefinition,
@@ -56,22 +49,12 @@ export function advanceResearchByNode(
   const magnifyingNode = state.research.magnifyingNode[move.playerId] ?? researchStartNode(track.id);
   const journalNode = state.research.journalNode[move.playerId] ?? researchStartNode(track.id);
 
-  assertLegalResearchNodeMove(
-    track,
-    move.token,
-    from,
-    move.toNodeId,
-    magnifyingNode,
-    journalNode,
-    player.rules.journalMaxLead,
-  );
-
+  assertLegalResearchNodeMove(track, move.token, from, move.toNodeId, magnifyingNode, journalNode, player.rules.journalMaxLead);
   const bridge = findResearchBridge(track, from, move.toNodeId);
   assertVerifiedResearchBridge(bridge);
   const cost = bridge.cost ?? {};
   assertCanPay(state, move.playerId, cost);
 
-  // All validation happens above. Mutations begin here.
   pay(state, move.playerId, cost);
   nodeRecord[move.playerId] = move.toNodeId;
 
@@ -80,5 +63,7 @@ export function advanceResearchByNode(
   if (move.token === 'magnifying') player.researchMagnifying = node.rowIndex;
   else player.researchJournal = node.rowIndex;
 
+  resolveResearchReward(state, move.playerId, bridge.id, bridge.reward);
+  resolveResearchNodeRewards(state, move.playerId, move.token, node);
   return bridge;
 }
