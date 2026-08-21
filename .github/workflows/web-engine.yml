@@ -7,11 +7,15 @@ on:
     paths:
       - 'web/**'
       - 'objects/AllCards.4bfea4/**'
+      - 'objects/Level1Sites.a27f36/**'
+      - 'objects/Level2Sites.5ab09c/**'
       - '.github/workflows/web-engine.yml'
   pull_request:
     paths:
       - 'web/**'
       - 'objects/AllCards.4bfea4/**'
+      - 'objects/Level1Sites.a27f36/**'
+      - 'objects/Level2Sites.5ab09c/**'
       - '.github/workflows/web-engine.yml'
 
 jobs:
@@ -22,9 +26,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Extract TTS card data
+      - name: Extract TTS game data
         working-directory: web
-        run: npm run extract:cards
+        run: npm run extract:data
       - name: Run engine tests
         working-directory: web
         run: npm test
