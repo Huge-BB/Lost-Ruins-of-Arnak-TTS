@@ -1,7 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame } from './engine.ts';
-import { resolvePendingAssistantReward, resolvePendingFreeArtifact, resolvePendingLevel1SiteActivation } from './pending-rewards.ts';
+import {
+  resolvePendingAssistantReward,
+  resolvePendingFreeArtifact,
+  resolvePendingLevel1SiteActivation,
+  resolvePendingResearchChoice,
+  resolvePendingVisibleSilverAssistant,
+} from './pending-rewards.ts';
 import type { EngineContext } from './types.ts';
 
 test('claim-assistant pending reward consumes only after a valid stack choice', () => {
@@ -9,10 +15,7 @@ test('claim-assistant pending reward consumes only after a valid stack choice', 
   state.phase = 'playing';
   state.currentPlayer = 'p1';
   state.assistants.stacks = [['a1'], ['a2'], ['a3']];
-  state.pendingRewards.push({
-    playerId: 'p1', sourceId: 'bird:r0:p0', code: 'research:CLAIM_ASSISTANT',
-    payload: { type: 'CLAIM_ASSISTANT', level: 'silver' },
-  });
+  state.pendingRewards.push({ playerId: 'p1', sourceId: 'bird:r0:p0', code: 'research:CLAIM_ASSISTANT', payload: { type: 'CLAIM_ASSISTANT', level: 'silver' } });
   const next = resolvePendingAssistantReward(state, 'p1', 0, { stackIndex: 1 });
   assert.equal(next.pendingRewards.length, 0);
   assert.deepEqual(next.players.p1.assistants, [{ id: 'a2', level: 'silver', exhausted: false }]);
@@ -65,4 +68,32 @@ test('Monkey Level I site activation resolves the chosen discovered site reward'
   const next = resolvePendingLevel1SiteActivation(state, 'p1', 0, 's1', context);
   assert.equal(next.pendingRewards.length, 0);
   assert.equal(next.players.p1.resources.coin, 1);
+});
+
+test('Monkey assistant-or-upgrade CHOOSE turns into the selected assistant pending reward', () => {
+  const state = createGame(['p1']);
+  state.pendingRewards.push({
+    playerId: 'p1', sourceId: 'monkey:r2:p0', code: 'research:CHOOSE',
+    payload: { type: 'CHOOSE', count: 1, options: [
+      { type: 'CLAIM_ASSISTANT', level: 'silver' },
+      { type: 'UPGRADE_ASSISTANT', level: 'gold' },
+    ] },
+  });
+  const next = resolvePendingResearchChoice(state, 'p1', 0, 1);
+  assert.equal(next.pendingRewards.length, 1);
+  assert.equal(next.pendingRewards[0].code, 'research:UPGRADE_ASSISTANT');
+});
+
+test('Monkey visible silver assistant triggers top card then moves it to stack bottom', () => {
+  const state = createGame(['p1']);
+  state.assistants.stacks = [['top', 'middle', 'bottom']];
+  state.pendingRewards.push({
+    playerId: 'p1', sourceId: 'monkey:r5:p0', code: 'research:ACTIVATE_VISIBLE_SILVER_ASSISTANT_THEN_BOTTOM',
+    payload: { type: 'ACTIVATE_VISIBLE_SILVER_ASSISTANT_THEN_BOTTOM' },
+  });
+  const next = resolvePendingVisibleSilverAssistant(state, 'p1', 0, 0);
+  assert.deepEqual(next.assistants.stacks[0], ['middle', 'bottom', 'top']);
+  assert.equal(next.pendingRewards.length, 1);
+  assert.equal(next.pendingRewards[0].code, 'assistant:ACTIVATE_SILVER');
+  assert.deepEqual(next.pendingRewards[0].payload, { type: 'ACTIVATE_ASSISTANT_EFFECT', assistantId: 'top', level: 'silver' });
 });
