@@ -5,6 +5,6 @@
   "type": "module",
   "scripts": {
     "extract:cards": "node scripts/extract-cards.mjs",
-    "test": "node --experimental-strip-types --test src/engine.test.ts"
+    "test": "node --experimental-strip-types --test src/engine.test.ts src/cards.test.ts"
   }
 }
