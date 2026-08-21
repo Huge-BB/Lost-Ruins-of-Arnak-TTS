@@ -12,6 +12,9 @@ const context: EngineContext = {
     plane: { id: 'plane', name: 'Plane', type: 'Item', expansion: 'Base Game', travel: { plane: 1 } },
     doubleCar: { id: 'doubleCar', name: 'Double Car', type: 'Item', expansion: 'Base Game', travel: { car: 2 } },
   },
+  sites: {
+    templeTile: { id: 'templeTile', level: 1, rewardCode: '', expansion: 'Base Game' },
+  },
 };
 
 test('travel substitution follows the Arnak hierarchy', () => {
@@ -26,7 +29,7 @@ test('travel substitution follows the Arnak hierarchy', () => {
 
 test('PLACE_WORKER consumes travel cards atomically', () => {
   const state = reduce(createGame(['p1']), { type: 'START_GAME' });
-  state.sites.temple = { id: 'temple', level: 1, idolSlots: 0, travelCost: { boat: 1 } };
+  state.sites.temple = { id: 'temple', level: 1, tileId: 'templeTile', idolSlots: 0, travelCost: { boat: 1 } };
   state.players.p1.hand = ['plane'];
 
   const next = reduce(state, { type: 'PLACE_WORKER', playerId: 'p1', siteId: 'temple', paymentCardIds: ['plane'] }, context);
@@ -38,7 +41,7 @@ test('PLACE_WORKER consumes travel cards atomically', () => {
 
 test('invalid travel payment leaves the input state untouched', () => {
   const state = reduce(createGame(['p1']), { type: 'START_GAME' });
-  state.sites.temple = { id: 'temple', level: 1, idolSlots: 0, travelCost: { boat: 1 } };
+  state.sites.temple = { id: 'temple', level: 1, tileId: 'templeTile', idolSlots: 0, travelCost: { boat: 1 } };
   state.players.p1.hand = ['car'];
 
   assert.throws(
