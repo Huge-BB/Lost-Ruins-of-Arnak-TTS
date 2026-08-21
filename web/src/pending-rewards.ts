@@ -1,5 +1,6 @@
 import { claimAssistant, upgradeOwnedAssistant } from './assistant-actions.ts';
 import { applyCardEffects, getCardEffects } from './effects.ts';
+import { resolveResearchReward } from './research-rewards.ts';
 import { resolveRewardCode } from './site-rewards.ts';
 import type { EngineContext, GameState, PlayerId, ResearchReward } from './types.ts';
 
@@ -54,6 +55,26 @@ export function resolvePendingAssistantReward(
   return consumePending(resolved, pendingIndex);
 }
 
+export function resolvePendingResearchChoice(
+  state: GameState,
+  playerId: PlayerId,
+  pendingIndex: number,
+  optionIndex: number,
+  context?: EngineContext,
+): GameState {
+  const pending = assertPendingOwner(state, playerId, pendingIndex);
+  const reward = researchRewardPayload(pending.payload);
+  if (reward.type !== 'CHOOSE') throw new Error(`Pending reward is not a CHOOSE reward: ${reward.type}`);
+  if (reward.count !== 1) throw new Error('Only single-option research choices are currently resolvable');
+  if (!Number.isInteger(optionIndex) || optionIndex < 0 || optionIndex >= reward.options.length) throw new Error(`Invalid research choice index: ${optionIndex}`);
+
+  const next = structuredClone(state);
+  const sourceId = next.pendingRewards[pendingIndex].sourceId;
+  next.pendingRewards.splice(pendingIndex, 1);
+  resolveResearchReward(next, playerId, sourceId, reward.options[optionIndex], context);
+  return next;
+}
+
 export function resolvePendingFreeArtifact(
   state: GameState,
   playerId: PlayerId,
@@ -97,5 +118,35 @@ export function resolvePendingLevel1SiteActivation(
   const next = structuredClone(state);
   resolveRewardCode(next, playerId, site.tileId, definition.rewardCode, context);
   next.pendingRewards.splice(pendingIndex, 1);
+  return next;
+}
+
+export function resolvePendingVisibleSilverAssistant(
+  state: GameState,
+  playerId: PlayerId,
+  pendingIndex: number,
+  stackIndex: number,
+): GameState {
+  const pending = assertPendingOwner(state, playerId, pendingIndex);
+  const reward = researchRewardPayload(pending.payload);
+  if (reward.type !== 'ACTIVATE_VISIBLE_SILVER_ASSISTANT_THEN_BOTTOM') {
+    throw new Error(`Pending reward is not a visible silver assistant activation: ${reward.type}`);
+  }
+  if (!Number.isInteger(stackIndex) || stackIndex < 0 || stackIndex >= state.assistants.stacks.length) throw new Error(`Invalid assistant stack: ${stackIndex}`);
+  const stack = state.assistants.stacks[stackIndex];
+  const assistantId = stack.at(-1);
+  if (!assistantId) throw new Error(`Assistant stack is empty: ${stackIndex}`);
+
+  const next = structuredClone(state);
+  const nextStack = next.assistants.stacks[stackIndex];
+  nextStack.pop();
+  nextStack.unshift(assistantId);
+  next.pendingRewards.splice(pendingIndex, 1);
+  next.pendingRewards.push({
+    playerId,
+    sourceId: pending.sourceId,
+    code: 'assistant:ACTIVATE_SILVER',
+    payload: { type: 'ACTIVATE_ASSISTANT_EFFECT', assistantId, level: 'silver' },
+  });
   return next;
 }
