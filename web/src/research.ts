@@ -22,6 +22,22 @@ export function nextResearchPosition(
   return currentPosition + 1;
 }
 
+export function nextLegalResearchPosition(
+  track: ResearchTrackDefinition,
+  token: ResearchToken,
+  currentPosition: number,
+  magnifyingPosition: number,
+  journalPosition: number,
+): number {
+  const next = nextResearchPosition(track, token, currentPosition);
+  const nextMagnifying = token === 'magnifying' ? next : magnifyingPosition;
+  const nextJournal = token === 'journal' ? next : journalPosition;
+  if (nextJournal > nextMagnifying) {
+    throw new Error('Journal cannot advance ahead of the magnifying glass');
+  }
+  return next;
+}
+
 export function researchRowPoints(
   track: ResearchTrackDefinition,
   token: ResearchToken,
@@ -46,6 +62,9 @@ export function researchScore(
 ): number {
   if (!Number.isInteger(templeArrivalPoints) || templeArrivalPoints < 0) {
     throw new Error('Temple arrival points must be a non-negative integer');
+  }
+  if (journalPosition > magnifyingPosition) {
+    throw new Error('Journal cannot be ahead of the magnifying glass');
   }
   return researchRowPoints(track, 'magnifying', magnifyingPosition)
     + researchRowPoints(track, 'journal', journalPosition)
