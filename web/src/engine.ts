@@ -266,7 +266,6 @@ export function reduce(state: GameState, action: GameAction, context: EngineCont
       const player = assertPlayer(next, action.playerId);
       const site = next.sites[action.siteId];
       if (!site) throw new Error(`Unknown site: ${action.siteId}`);
-      if (!site.tileId) throw new Error('Undiscovered sites must use DISCOVER_SITE');
       if (site.occupiedBy) throw new Error('Site is occupied');
       if (player.availableWorkers < 1) throw new Error('No available worker');
       payTravelFromHand(next, action.playerId, action.paymentCardIds ?? [], context, action.siteId);
