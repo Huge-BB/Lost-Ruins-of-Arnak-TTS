@@ -19,6 +19,7 @@ function validateCost(cost: ResourceCost, label: string) {
 
 function bridgeKey(from: string, to: string) { return `${from}->${to}`; }
 function allNodes(track: ResearchTrackDefinition): ResearchNodeDefinition[] { return track.rows.flatMap(row => row.nodes ?? []); }
+export const researchTempleNode = (boardId: string) => `${boardId}:temple`;
 
 function validateNodeOverride(node: ResearchNodeDefinition, label: string) {
   if (!Number.isInteger(node.researchLevel) || node.researchLevel < 0) throw new Error(`${label} has invalid researchLevel`);
@@ -42,7 +43,8 @@ export function applyResearchManualData(
   const requireVerified = options.requireVerified ?? false;
   const next = structuredClone(track);
   const nodes = new Map(allNodes(next).map(node => [node.id, node]));
-  const topology = new Map((next.bridges ?? []).map(bridge => [bridgeKey(bridge.from, bridge.to), bridge]));
+  const bridges = next.bridges ??= [];
+  const topology = new Map(bridges.map(bridge => [bridgeKey(bridge.from, bridge.to), bridge]));
   const seenBridges = new Set<string>();
   const seenNodes = new Set<string>();
   const seenRewards = new Set<string>();
@@ -62,7 +64,13 @@ export function applyResearchManualData(
     const key = bridgeKey(manualBridge.from, manualBridge.to);
     if (seenBridges.has(key)) throw new Error(`Duplicate manual research bridge: ${key}`);
     seenBridges.add(key);
-    const target = topology.get(key);
+
+    let target = topology.get(key);
+    if (!target && manualBridge.to === researchTempleNode(boardId) && nodes.has(manualBridge.from)) {
+      target = { id: key, from: manualBridge.from, to: manualBridge.to };
+      bridges.push(target);
+      topology.set(key, target);
+    }
     if (!target) throw new Error(`Manual research bridge does not exist in ${boardId} topology: ${key}`);
     validateCost(manualBridge.cost, key);
     if (requireVerified && !manualBridge.verified) throw new Error(`Research bridge is not verified: ${key}`);
