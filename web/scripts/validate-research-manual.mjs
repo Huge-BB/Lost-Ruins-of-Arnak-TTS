@@ -4,14 +4,24 @@ import { resolve } from 'node:path';
 const root = resolve(import.meta.dirname, '..');
 const generated = JSON.parse(await readFile(resolve(root, 'src/generated/research-tracks.json'), 'utf8'));
 const manual = JSON.parse(await readFile(resolve(root, 'data/research-manual-data.json'), 'utf8'));
-const costKeys = new Set(['coin', 'compass', 'tablet', 'arrowhead', 'jewel', 'usableIdol']);
+const costKeys = new Set(['coin', 'compass', 'tablet', 'arrowhead', 'jewel', 'usableIdol', 'travel']);
+const travelKeys = new Set(['boot', 'car', 'boat', 'plane']);
 const resources = new Set(['coin', 'compass', 'tablet', 'arrowhead', 'jewel', 'fear']);
+const boardIds = ['bird', 'snake', 'monkey', 'lizard'];
 
 function allNodes(track) { return track.rows.flatMap(row => row.nodes ?? []); }
+function validateTravel(travel, label) {
+  if (!travel || typeof travel !== 'object' || Array.isArray(travel)) throw new Error(`${label}: travel cost must be an object`);
+  for (const [key, value] of Object.entries(travel)) {
+    if (!travelKeys.has(key)) throw new Error(`${label}: unsupported travel key ${key}`);
+    if (!Number.isInteger(value) || value < 0) throw new Error(`${label}: invalid ${key} travel cost`);
+  }
+}
 function validateCost(cost, label) {
   for (const [key, value] of Object.entries(cost ?? {})) {
     if (!costKeys.has(key)) throw new Error(`${label}: unsupported cost key ${key}`);
-    if (!Number.isInteger(value) || value < 0) throw new Error(`${label}: invalid ${key} cost`);
+    if (key === 'travel') validateTravel(value, `${label}.travel`);
+    else if (!Number.isInteger(value) || value < 0) throw new Error(`${label}: invalid ${key} cost`);
   }
 }
 function validateReward(reward, label) {
@@ -19,14 +29,18 @@ function validateReward(reward, label) {
   if (reward.type === 'GAIN_RESOURCE') {
     if (!resources.has(reward.resource)) throw new Error(`${label}: unsupported GAIN_RESOURCE resource`);
     if (!Number.isInteger(reward.amount) || reward.amount < 0) throw new Error(`${label}: invalid GAIN_RESOURCE amount`);
-  } else if (reward.type === 'DRAW_CARD') {
-    if (!Number.isInteger(reward.amount) || reward.amount < 0) throw new Error(`${label}: invalid DRAW_CARD amount`);
+  } else if (reward.type === 'DRAW_CARD' || reward.type === 'GAIN_FEAR_CARD') {
+    if (!Number.isInteger(reward.amount) || reward.amount < 0) throw new Error(`${label}: invalid ${reward.type} amount`);
+  } else if (reward.type === 'REFRESH_ASSISTANTS') {
+    if (reward.amount !== 'all' && (!Number.isInteger(reward.amount) || reward.amount < 0)) throw new Error(`${label}: invalid REFRESH_ASSISTANTS amount`);
   } else if (reward.type === 'CLAIM_ASSISTANT') {
     if (reward.level !== 'silver') throw new Error(`${label}: CLAIM_ASSISTANT level must be silver`);
   } else if (reward.type === 'UPGRADE_ASSISTANT') {
     if (reward.level !== 'gold') throw new Error(`${label}: UPGRADE_ASSISTANT level must be gold`);
-  } else if (reward.type === 'BONUS_TILE') {
-    // marker only
+  } else if (reward.type === 'BONUS_TILE' || reward.type === 'ACQUIRE_ARTIFACT_FREE'
+    || reward.type === 'ACTIVATE_DISCOVERED_LEVEL1_SITE'
+    || reward.type === 'ACTIVATE_VISIBLE_SILVER_ASSISTANT_THEN_BOTTOM') {
+    // Structured choice/marker effects are resolved by their temple/action handler.
   } else if (reward.type === 'SEQUENCE') {
     if (!Array.isArray(reward.rewards) || reward.rewards.length === 0) throw new Error(`${label}: SEQUENCE rewards must be non-empty`);
     reward.rewards.forEach((child, index) => validateReward(child, `${label}.rewards[${index}]`));
@@ -44,7 +58,7 @@ function validateRewards(rewards, label) {
 
 let verifiedBridgeCount = 0;
 let totalBridgeCount = 0;
-for (const boardId of ['bird', 'snake']) {
+for (const boardId of boardIds) {
   const track = generated[boardId];
   const overlay = manual.boards?.[boardId] ?? { bridges: [], nodeOverrides: [], nodeRewards: [] };
   if (!track) throw new Error(`Missing generated research track: ${boardId}`);
@@ -67,6 +81,11 @@ for (const boardId of ['bird', 'snake']) {
     if (isTempleEntry && !bridgeIds.has(id)) totalBridgeCount += 1;
     validateCost(bridge.cost, `${boardId}:${id}`);
     validateRewards(bridge.rewards, `${boardId}:${id}.rewards`);
+    if (bridge.allowedTokens !== undefined) {
+      if (!Array.isArray(bridge.allowedTokens) || bridge.allowedTokens.length === 0 || bridge.allowedTokens.some(token => !['magnifying', 'journal'].includes(token))) {
+        throw new Error(`${boardId}:${id}: invalid allowedTokens`);
+      }
+    }
     if (bridge.verified === true) verifiedBridgeCount += 1;
   }
   const seenOverrides = new Set();
@@ -90,4 +109,4 @@ for (const boardId of ['bird', 'snake']) {
     validateRewards(entry.rewards, `${boardId}:${id}.rewards`);
   }
 }
-console.log(`Research manual data valid: ${verifiedBridgeCount}/${totalBridgeCount} bridges verified.`);
+console.log(`Research manual data valid: ${verifiedBridgeCount}/${totalBridgeCount} bridges verified across ${boardIds.length} temples.`);
