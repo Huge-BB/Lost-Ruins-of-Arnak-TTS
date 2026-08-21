@@ -1,4 +1,5 @@
 import { prepareBaseGameSetup } from './cards.ts';
+import { applyCardEffects, getCardEffects } from './effects.ts';
 import { shuffleWithSeed } from './rng.ts';
 import type { EngineContext, GameAction, GameState, PlayerColor, PlayerId, Resource } from './types.ts';
 
@@ -132,6 +133,22 @@ function advanceMarketToNextRound(state: GameState) {
   refillMarketForRound(state);
 }
 
+function playCard(state: GameState, action: Extract<GameAction, { type: 'PLAY_CARD' }>, context: EngineContext) {
+  assertPlaying(state);
+  assertCurrentPlayer(state, action.playerId);
+
+  const player = assertPlayer(state, action.playerId);
+  const handIndex = player.hand.indexOf(action.cardId);
+  if (handIndex < 0) throw new Error('Card is not in the player hand');
+
+  const card = context.cards[action.cardId];
+  if (!card) throw new Error(`Unknown card: ${action.cardId}`);
+
+  player.hand.splice(handIndex, 1);
+  player.playedCards.push(action.cardId);
+  applyCardEffects(state, action.playerId, getCardEffects(action.cardId, context));
+}
+
 function buyCard(state: GameState, action: Extract<GameAction, { type: 'BUY_CARD' }>, context: EngineContext) {
   assertPlaying(state);
   assertCurrentPlayer(state, action.playerId);
@@ -233,6 +250,10 @@ export function reduce(state: GameState, action: GameAction, context: EngineCont
       next.research[key][action.playerId] += amount;
       return next;
     }
+
+    case 'PLAY_CARD':
+      playCard(next, action, context);
+      return next;
 
     case 'PLACE_WORKER': {
       assertPlaying(next);
