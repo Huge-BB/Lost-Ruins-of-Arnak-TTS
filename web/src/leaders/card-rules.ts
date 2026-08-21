@@ -1,3 +1,4 @@
+import { grantTemporaryTravel } from '../action-window.ts';
 import type { CardId, EngineContext, GameState, PlayerId } from '../types.ts';
 import { falconerAdvanceEagle } from './actions.ts';
 import { explorerSpendSnackOnStartingCard } from './extra-actions.ts';
@@ -21,7 +22,7 @@ export function resolveLeaderStartingCard(state:GameState,playerId:PlayerId,card
       if(card.name==='Funding'){if(choice!=='coin')throw new Error('Funding grants coin');gain(next,playerId,'coin');return next;}
       if(card.name==='Piloting'){
         if(choice==='compass'){gain(next,playerId,'compass');return next;}
-        if(choice==='payCoinForPlanes'){if(next.players[playerId].resources.coin<1)throw new Error('Piloting requires 1 coin');next.players[playerId].resources.coin-=1;queue(next,playerId,source,'leader:TRAVEL_CREDIT',{travel:{plane:2},freeAction:true});return next;}
+        if(choice==='payCoinForPlanes'){if(next.players[playerId].resources.coin<1)throw new Error('Piloting requires 1 coin');next.players[playerId].resources.coin-=1;return grantTemporaryTravel(next,playerId,{plane:2});}
         throw new Error('Invalid Piloting choice');
       }
       if(card.name==='Transmission'){
