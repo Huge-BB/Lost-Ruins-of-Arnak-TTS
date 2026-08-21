@@ -5,6 +5,8 @@ export type Resource = 'tablet' | 'arrowhead' | 'jewel' | 'coin' | 'compass' | '
 export type CardType = 'Item' | 'Artifact' | 'Fear' | 'Starter' | 'Other';
 export type TravelIcon = 'boot' | 'car' | 'boat' | 'plane';
 export type TravelCost = Partial<Record<TravelIcon, number>>;
+export type ResearchBoardId = 'bird' | 'snake';
+export type ResearchToken = 'magnifying' | 'journal';
 
 export interface Resources {
   tablet: number;
@@ -58,6 +60,19 @@ export interface GuardianDefinition {
   id: string;
   expansion: string;
   image?: SpriteImage;
+}
+
+export interface ResearchRowDefinition {
+  magnifyingPoints: number;
+  journalPoints: number;
+  grantsAssistant: boolean;
+}
+
+export interface ResearchTrackDefinition {
+  id: ResearchBoardId;
+  name: string;
+  rows: ResearchRowDefinition[];
+  templePoints: number[];
 }
 
 export interface PendingReward {
@@ -114,6 +129,7 @@ export interface MarketState {
 }
 
 export interface ResearchState {
+  board: ResearchBoardId;
   magnifying: Record<PlayerId, number>;
   journal: Record<PlayerId, number>;
 }
@@ -140,10 +156,11 @@ export interface EngineContext {
   sites?: Record<string, SiteDefinition>;
   idols?: Record<string, IdolDefinition>;
   guardians?: Record<string, GuardianDefinition>;
+  researchTracks?: Partial<Record<ResearchBoardId, ResearchTrackDefinition>>;
 }
 
 export type GameAction =
-  | { type: 'START_GAME'; seed?: string }
+  | { type: 'START_GAME'; seed?: string; researchBoard?: ResearchBoardId }
   | { type: 'END_TURN'; playerId: PlayerId }
   | { type: 'PASS'; playerId: PlayerId }
   | { type: 'PLAY_CARD'; playerId: PlayerId; cardId: CardId }
@@ -151,5 +168,5 @@ export type GameAction =
   | { type: 'DISCOVER_SITE'; playerId: PlayerId; siteId: string; paymentCardIds?: CardId[] }
   | { type: 'GAIN_RESOURCE'; playerId: PlayerId; resource: Resource; amount: number }
   | { type: 'SPEND_RESOURCE'; playerId: PlayerId; resource: Resource; amount: number }
-  | { type: 'ADVANCE_RESEARCH'; playerId: PlayerId; track: 'magnifying' | 'journal'; amount?: number }
+  | { type: 'ADVANCE_RESEARCH'; playerId: PlayerId; track: ResearchToken; amount?: number }
   | { type: 'BUY_CARD'; playerId: PlayerId; cardId: CardId };
