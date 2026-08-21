@@ -134,13 +134,13 @@ export function resolvePendingVisibleSilverAssistant(
   }
   if (!Number.isInteger(stackIndex) || stackIndex < 0 || stackIndex >= state.assistants.stacks.length) throw new Error(`Invalid assistant stack: ${stackIndex}`);
   const stack = state.assistants.stacks[stackIndex];
-  const assistantId = stack.at(-1);
+  const assistantId = stack[0];
   if (!assistantId) throw new Error(`Assistant stack is empty: ${stackIndex}`);
 
   const next = structuredClone(state);
   const nextStack = next.assistants.stacks[stackIndex];
-  nextStack.pop();
-  nextStack.unshift(assistantId);
+  nextStack.shift();
+  nextStack.push(assistantId);
   next.pendingRewards.splice(pendingIndex, 1);
   next.pendingRewards.push({
     playerId,
