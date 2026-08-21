@@ -32,6 +32,7 @@ const track: ResearchTrackDefinition = {
     { id: 'bird:start->bird:r0:p1', from: 'bird:start', to: 'bird:r0:p1', cost: {}, verified: false },
     { id: 'bird:r0:p0->bird:r1:p0', from: 'bird:r0:p0', to: 'bird:r1:p0', cost: { tablet: 1 }, verified: true },
     { id: 'bird:r0:p0->bird:r1:p1', from: 'bird:r0:p0', to: 'bird:r1:p1', cost: { compass: 2 }, verified: true },
+    { id: 'bird:r1:p0->bird:temple', from: 'bird:r1:p0', to: 'bird:temple', cost: { jewel: 1 }, verified: true },
   ],
   templePoints: [23, 21, 20, 19],
 };
@@ -42,6 +43,7 @@ function playingGame() {
   state.players.p1.resources.coin = 3;
   state.players.p1.resources.tablet = 2;
   state.players.p1.resources.compass = 3;
+  state.players.p1.resources.jewel = 2;
   return state;
 }
 
@@ -77,13 +79,11 @@ test('irregular researchLevel, not row count, controls journalist lead', () => {
   const state = playingGame();
   advanceResearchByNode(state, track, { playerId: 'p1', token: 'magnifying', toNodeId: 'bird:r0:p0' });
   advanceResearchByNode(state, track, { playerId: 'p1', token: 'journal', toNodeId: 'bird:r0:p0' });
-
   state.players.p1.rules.journalMaxLead = 1;
   assert.throws(
     () => advanceResearchByNode(state, track, { playerId: 'p1', token: 'journal', toNodeId: 'bird:r1:p1' }),
     /ahead of the magnifying glass/,
   );
-
   state.players.p1.rules.journalMaxLead = 2;
   advanceResearchByNode(state, track, { playerId: 'p1', token: 'journal', toNodeId: 'bird:r1:p1' });
   assert.equal(state.research.journalNode.p1, 'bird:r1:p1');
@@ -99,4 +99,27 @@ test('insufficient bridge cost leaves node and resources unchanged', () => {
     /Insufficient tablet/,
   );
   assert.deepEqual(state, before);
+});
+
+test('magnifying glass entering the Lost Temple pays cost and records arrival points', () => {
+  const state = playingGame();
+  advanceResearchByNode(state, track, { playerId: 'p1', token: 'magnifying', toNodeId: 'bird:r0:p0' });
+  advanceResearchByNode(state, track, { playerId: 'p1', token: 'magnifying', toNodeId: 'bird:r1:p0' });
+  advanceResearchByNode(state, track, { playerId: 'p1', token: 'magnifying', toNodeId: 'bird:temple' });
+  assert.equal(state.players.p1.resources.jewel, 1);
+  assert.equal(state.research.magnifyingNode.p1, 'bird:temple');
+  assert.equal(state.research.templeArrivalPoints.p1, 23);
+  assert.deepEqual(state.research.templeArrivals, ['p1']);
+});
+
+test('journal cannot use a Lost Temple entry bridge', () => {
+  const state = playingGame();
+  state.research.journalNode.p1 = 'bird:r1:p0';
+  state.research.journal.p1 = 1;
+  state.research.magnifyingNode.p1 = 'bird:r1:p0';
+  state.research.magnifying.p1 = 1;
+  assert.throws(
+    () => advanceResearchByNode(state, track, { playerId: 'p1', token: 'journal', toNodeId: 'bird:temple' }),
+    /Journal cannot enter/,
+  );
 });
