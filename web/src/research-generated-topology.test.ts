@@ -14,8 +14,8 @@ for (const [boardId, track] of Object.entries(tracks)) {
     const validFrom = new Set([start, ...nodeIds]);
 
     for (const bridge of track.bridges ?? []) {
-      assert.ok(validFrom.has(bridge.from), `unknown bridge source ${bridge.from}`);
-      assert.ok(nodeIds.has(bridge.to), `unknown bridge destination ${bridge.to}`);
+      assert.ok(validFrom.has(bridge.from), `${bridge.id}: unknown bridge source ${bridge.from}`);
+      assert.ok(nodeIds.has(bridge.to), `${bridge.id}: unknown bridge destination ${bridge.to}`);
       assert.notEqual(bridge.from, bridge.to, `self-loop ${bridge.id}`);
     }
 
