@@ -42,11 +42,20 @@ test('Bird board creates three deterministic stacks of four assistants', async (
   assert.equal(availableAssistantIds(first).length, 3);
 });
 
-test('Snake board separates one special assistant per player before normal supply is finalized', async () => {
+test('Snake board separates one special assistant per player before splitting the remainder', async () => {
   const assistants = await loadAssistants();
-  const supply = prepareAssistantSupply(assistants, 'snake', 3, 'snake-assistant-seed');
+  const expectedStackSizes: Record<number, number[]> = {
+    1: [4, 4, 3],
+    2: [3, 3, 4],
+    3: [3, 3, 3],
+    4: [3, 3, 2],
+  };
 
-  assert.equal(supply.specialStack.length, 3);
-  assert.deepEqual(supply.stacks, []);
-  assert.equal(new Set(supply.specialStack).size, 3);
+  for (const playerCount of [1, 2, 3, 4]) {
+    const supply = prepareAssistantSupply(assistants, 'snake', playerCount, `snake-${playerCount}`);
+    assert.equal(supply.specialStack.length, playerCount);
+    assert.deepEqual(supply.stacks.map(stack => stack.length), expectedStackSizes[playerCount]);
+    assert.equal(new Set([...supply.specialStack, ...supply.stacks.flat()]).size, 12);
+    assert.equal(availableAssistantIds(supply).length, 3);
+  }
 });
