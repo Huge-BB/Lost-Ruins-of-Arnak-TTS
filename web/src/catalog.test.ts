@@ -2,11 +2,16 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 import { buildBaseGameCardPools, prepareBaseGameSetup, validateBaseGameCardPools } from './cards.ts';
-import type { EngineContext } from './types.ts';
+import type { EngineContext, SiteDefinition } from './types.ts';
 
 async function loadExtractedContext(): Promise<EngineContext> {
   const raw = await readFile(new URL('./generated/cards.json', import.meta.url), 'utf8');
   return { cards: JSON.parse(raw) };
+}
+
+async function loadExtractedSites(): Promise<Record<string, SiteDefinition>> {
+  const raw = await readFile(new URL('./generated/sites.json', import.meta.url), 'utf8');
+  return JSON.parse(raw);
 }
 
 test('extracted TTS catalog contains a playable base-game card pool', async () => {
@@ -33,5 +38,19 @@ test('extracted TTS catalog can produce a four-player round-one setup', async ()
   for (const player of setup.playerDecks) {
     assert.equal(player.hand.length, 5);
     assert.equal(player.deck.length, 1);
+  }
+});
+
+test('extracted TTS site catalog preserves base-game levels and reward codes', async () => {
+  const sites = await loadExtractedSites();
+  const all = Object.values(sites);
+
+  assert.ok(all.filter(site => site.level === 1).length > 0);
+  assert.ok(all.filter(site => site.level === 2).length > 0);
+  assert.equal(sites['4e4290']?.rewardCode, 'ctt');
+  assert.equal(sites['3b6bd8']?.rewardCode, 'fttaa');
+  for (const site of all) {
+    assert.equal(site.expansion, 'Base Game');
+    assert.ok(site.image?.faceUrl);
   }
 });
