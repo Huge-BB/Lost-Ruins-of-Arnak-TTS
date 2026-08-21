@@ -16,6 +16,7 @@ export interface PlayerState {
   resources: Resources;
   workers: number;
   availableWorkers: number;
+  hasPassed: boolean;
   researchMagnifying: number;
   researchJournal: number;
   deck: string[];
@@ -46,6 +47,7 @@ export interface GameState {
   version: 1;
   phase: 'setup' | 'playing' | 'finished';
   round: number;
+  firstPlayer: PlayerId;
   currentPlayer: PlayerId;
   players: Record<PlayerId, PlayerState>;
   playerOrder: PlayerId[];
@@ -56,7 +58,8 @@ export interface GameState {
 
 export type GameAction =
   | { type: 'START_GAME' }
-  | { type: 'END_TURN' }
+  | { type: 'END_TURN'; playerId: PlayerId }
+  | { type: 'PASS'; playerId: PlayerId }
   | { type: 'PLACE_WORKER'; playerId: PlayerId; siteId: string }
   | { type: 'GAIN_RESOURCE'; playerId: PlayerId; resource: Resource; amount: number }
   | { type: 'SPEND_RESOURCE'; playerId: PlayerId; resource: Resource; amount: number }
