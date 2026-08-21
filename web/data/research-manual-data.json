@@ -3,119 +3,52 @@
   "boards": {
     "bird": {
       "bridges": [
-        { "from": "bird:start", "to": "bird:r0:p0", "cost": {
-          "arrowhead": 1, "compass": 1
-        }, "verified": false },
-        { "from": "bird:start", "to": "bird:r0:p1", "cost": {
-          "jewel": 1
-        }, "verified": false },
-        { "from": "bird:r0:p0", "to": "bird:r1:p0", "cost": {
-          "jewel": 1
-        }, "verified": false },
-        { "from": "bird:r0:p0", "to": "bird:r1:p1", "cost": {
-          "arrowhead": 1, "tablet": 1
-        }, "verified": false },
-        { "from": "bird:r0:p1", "to": "bird:r1:p1", "cost": {
-          "arrowhead": 1, "tablet": 1
-        }, "verified": false },
-        { "from": "bird:r1:p0", "to": "bird:r2:p0", "cost": {
-          "arrowhead": 1, "tablet": 2
-        }, "verified": false },
-        { "from": "bird:r1:p1", "to": "bird:r2:p0", "cost": {
-          "arrowhead": 1, "tablet": 2
-        }, "verified": false },
-        { "from": "bird:r2:p0", "to": "bird:r3:p0", "cost": {
-          "arrowhead": 1, "tablet": 1, "coin": 1
-        }, "verified": false },
-        { "from": "bird:r2:p0", "to": "bird:r3:p1", "cost": {
-          "jewel": 1, "tablet": 1
-        }, "verified": false },
-        { "from": "bird:r2:p0", "to": "bird:r3:p2", "cost": {
-          "arrowhead": 2
-        }, "verified": false },
-        { "from": "bird:r3:p0", "to": "bird:r4:p0", "cost": {
-          "jewel": 1, "coin": 1
-        }, "verified": false },
-        { "from": "bird:r3:p1", "to": "bird:r4:p0", "cost": {
-          "jewel": 1, "coin": 1
-        }, "verified": false },
-        { "from": "bird:r3:p2", "to": "bird:r4:p0", "cost": {
-          "jewel": 1, "coin": 1
-        }, "verified": false },
-        { "from": "bird:r4:p0", "to": "bird:r5:p0", "cost": {
-          "jewel": 1, "compass": 1
-        }, "verified": false },
-        { "from": "bird:r4:p0", "to": "bird:r5:p1", "cost": {
-          "arrowhead": 1, "tablet": 2
-        }, "verified": false },
-        { "from": "bird:r5:p0", "to": "bird:r6:p0", "cost": {
-          "arrowhead": 1, "tablet": 1, "coin": 1
-        }, "verified": false },
-        { "from": "bird:r5:p1", "to": "bird:r6:p0", "cost": {
-          "arrowhead": 1, "tablet": 1, "coin": 1
-        }, "verified": false },
-        { "from": "bird:r5:p1", "to": "bird:r6:p1", "cost": {
-          "jewel": 1, "tablet": 1
-        }, "verified": false }
+        { "from": "bird:start", "to": "bird:r0:p0", "cost": { "arrowhead": 1, "compass": 1 }, "verified": true },
+        { "from": "bird:start", "to": "bird:r0:p1", "cost": { "jewel": 1 }, "verified": true },
+        { "from": "bird:r0:p0", "to": "bird:r1:p0", "cost": { "jewel": 1 }, "verified": true },
+        { "from": "bird:r0:p0", "to": "bird:r1:p1", "cost": { "arrowhead": 1, "tablet": 1 }, "verified": true },
+        { "from": "bird:r0:p1", "to": "bird:r1:p1", "cost": { "arrowhead": 1, "tablet": 1 }, "verified": true },
+        { "from": "bird:r1:p0", "to": "bird:r2:p0", "cost": { "arrowhead": 1, "tablet": 2 }, "verified": true },
+        { "from": "bird:r1:p1", "to": "bird:r2:p0", "cost": { "arrowhead": 1, "tablet": 2 }, "verified": true },
+        { "from": "bird:r2:p0", "to": "bird:r3:p0", "cost": { "arrowhead": 1, "tablet": 1, "coin": 1 }, "verified": true },
+        { "from": "bird:r2:p0", "to": "bird:r3:p1", "cost": { "jewel": 1, "tablet": 1 }, "verified": true },
+        { "from": "bird:r2:p0", "to": "bird:r3:p2", "cost": { "arrowhead": 2 }, "verified": true },
+        { "from": "bird:r3:p0", "to": "bird:r4:p0", "cost": { "jewel": 1, "coin": 1 }, "verified": true },
+        { "from": "bird:r3:p1", "to": "bird:r4:p0", "cost": { "jewel": 1, "coin": 1 }, "verified": true },
+        { "from": "bird:r3:p2", "to": "bird:r4:p0", "cost": { "jewel": 1, "coin": 1 }, "verified": true },
+        { "from": "bird:r4:p0", "to": "bird:r5:p0", "cost": { "jewel": 1, "compass": 1 }, "verified": true },
+        { "from": "bird:r4:p0", "to": "bird:r5:p1", "cost": { "arrowhead": 1, "tablet": 2 }, "verified": true },
+        { "from": "bird:r5:p0", "to": "bird:r6:p0", "cost": { "arrowhead": 1, "tablet": 1, "coin": 1 }, "verified": true },
+        { "from": "bird:r5:p1", "to": "bird:r6:p0", "cost": { "arrowhead": 1, "tablet": 1, "coin": 1 }, "verified": true },
+        { "from": "bird:r5:p1", "to": "bird:r6:p1", "cost": { "jewel": 1, "tablet": 1 }, "verified": true },
+        { "from": "bird:r6:p0", "to": "bird:temple", "cost": {}, "verified": false, "comment": "Fill the printed Lost Temple entry cost." },
+        { "from": "bird:r6:p1", "to": "bird:temple", "cost": {}, "verified": false, "comment": "Fill the printed Lost Temple entry cost." }
       ],
       "nodeOverrides": [],
       "nodeRewards": []
     },
     "snake": {
       "bridges": [
-        { "from": "snake:start", "to": "snake:r0:p0", "cost": {
-          "tablet": 2, "compass": 1
-        }, "verified": false },
-        { "from": "snake:start", "to": "snake:r0:p1", "cost": {
-          "jewel": 1
-        }, "verified": false },
-        { "from": "snake:r0:p0", "to": "snake:r1:p0", "cost": {
-          "arrowhead": 1, "coin": 1, "compass": 1
-        }, "verified": false },
-        { "from": "snake:r0:p0", "to": "snake:r1:p1", "cost": {
-          "jewel": 1, "tablet": 1
-        }, "verified": false },
-        { "from": "snake:r0:p1", "to": "snake:r1:p1", "cost": {
-          "jewel": 1, "tablet": 1
-        }, "verified": false },
-        { "from": "snake:r0:p1", "to": "snake:r1:p2", "cost": {
-          "arrowhead": 2
-        }, "verified": false },
-        { "from": "snake:r1:p0", "to": "snake:r2:p0", "cost": {
-          "arrowhead": 1, "tablet": 2
-        }, "verified": false },
-        { "from": "snake:r1:p1", "to": "snake:r2:p0", "cost": {
-           "arrowhead": 1, "tablet": 2
-        }, "verified": false },
-        { "from": "snake:r1:p1", "to": "snake:r2:p1", "cost": {
-          "jewel": 1, "coin": 1
-        }, "verified": false },
-        { "from": "snake:r1:p2", "to": "snake:r2:p1", "cost": {
-          "jewel": 1, "coin": 1
-        }, "verified": false },
-        { "from": "snake:r2:p0", "to": "snake:r3:p0", "cost": {}, "verified": false },
-        { "from": "snake:r2:p1", "to": "snake:r3:p0", "cost": {}, "verified": false },
-        { "from": "snake:r3:p0", "to": "snake:r4:p0", "cost": {
-          "arrowhead": 2
-        }, "verified": false },
-        { "from": "snake:r3:p0", "to": "snake:r4:p1", "cost": {
-          "jewel": 1, "tablet": 1
-        }, "verified": false },
-        { "from": "snake:r4:p0", "to": "snake:r5:p0", "cost": {
-          "jewel": 1, "tablet": 1
-        }, "verified": false },
-        { "from": "snake:r4:p0", "to": "snake:r5:p1", "cost": {
-          "tablet": 3, "compass": 1
-        }, "verified": false },
-        { "from": "snake:r4:p1", "to": "snake:r5:p1", "cost": {
-          "tablet": 3, "compass": 1
-        }, "verified": false },
-        { "from": "snake:r5:p0", "to": "snake:r6:p0", "cost": {
-          "arrowhead": 1, "tablet": 1, "coin": 1
-        }, "verified": false },
-        { "from": "snake:r5:p1", "to": "snake:r6:p0", "cost": {
-          "arrowhead": 1, "tablet": 1, "coin": 1
-        }, "verified": false }
+        { "from": "snake:start", "to": "snake:r0:p0", "cost": { "tablet": 2, "compass": 1 }, "verified": true },
+        { "from": "snake:start", "to": "snake:r0:p1", "cost": { "jewel": 1 }, "verified": true },
+        { "from": "snake:r0:p0", "to": "snake:r1:p0", "cost": { "arrowhead": 1, "coin": 1, "compass": 1 }, "verified": true },
+        { "from": "snake:r0:p0", "to": "snake:r1:p1", "cost": { "jewel": 1, "tablet": 1 }, "verified": true },
+        { "from": "snake:r0:p1", "to": "snake:r1:p1", "cost": { "jewel": 1, "tablet": 1 }, "verified": true },
+        { "from": "snake:r0:p1", "to": "snake:r1:p2", "cost": { "arrowhead": 2 }, "verified": true },
+        { "from": "snake:r1:p0", "to": "snake:r2:p0", "cost": { "arrowhead": 1, "tablet": 2 }, "verified": true },
+        { "from": "snake:r1:p1", "to": "snake:r2:p0", "cost": { "arrowhead": 1, "tablet": 2 }, "verified": true },
+        { "from": "snake:r1:p1", "to": "snake:r2:p1", "cost": { "jewel": 1, "coin": 1 }, "verified": true },
+        { "from": "snake:r1:p2", "to": "snake:r2:p1", "cost": { "jewel": 1, "coin": 1 }, "verified": true },
+        { "from": "snake:r2:p0", "to": "snake:r3:p0", "cost": { "usableIdol": 1 }, "verified": true },
+        { "from": "snake:r2:p1", "to": "snake:r3:p0", "cost": { "usableIdol": 1 }, "verified": true },
+        { "from": "snake:r3:p0", "to": "snake:r4:p0", "cost": { "arrowhead": 2 }, "verified": true },
+        { "from": "snake:r3:p0", "to": "snake:r4:p1", "cost": { "jewel": 1, "tablet": 1 }, "verified": true },
+        { "from": "snake:r4:p0", "to": "snake:r5:p0", "cost": { "jewel": 1, "tablet": 1 }, "verified": true },
+        { "from": "snake:r4:p0", "to": "snake:r5:p1", "cost": { "tablet": 3, "compass": 1 }, "verified": true },
+        { "from": "snake:r4:p1", "to": "snake:r5:p1", "cost": { "tablet": 3, "compass": 1 }, "verified": true },
+        { "from": "snake:r5:p0", "to": "snake:r6:p0", "cost": { "arrowhead": 1, "tablet": 1, "coin": 1 }, "verified": true },
+        { "from": "snake:r5:p1", "to": "snake:r6:p0", "cost": { "arrowhead": 1, "tablet": 1, "coin": 1 }, "verified": true },
+        { "from": "snake:r6:p0", "to": "snake:temple", "cost": {}, "verified": false, "comment": "Fill the printed Lost Temple entry cost." }
       ],
       "nodeOverrides": [],
       "nodeRewards": []
