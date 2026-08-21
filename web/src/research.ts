@@ -8,6 +8,11 @@ import type { ResearchToken, ResearchTrackDefinition } from './types.ts';
  */
 export const RESEARCH_START_POSITION = -1;
 
+export interface ResearchMovementRules {
+  /** How many rows the journal may be ahead of the magnifying glass. Base game = 0; Journalist = 1. */
+  journalMaxLead?: number;
+}
+
 export function nextResearchPosition(
   track: ResearchTrackDefinition,
   token: ResearchToken,
@@ -28,12 +33,18 @@ export function nextLegalResearchPosition(
   currentPosition: number,
   magnifyingPosition: number,
   journalPosition: number,
+  rules: ResearchMovementRules = {},
 ): number {
+  const journalMaxLead = rules.journalMaxLead ?? 0;
+  if (!Number.isInteger(journalMaxLead) || journalMaxLead < 0) {
+    throw new Error('journalMaxLead must be a non-negative integer');
+  }
+
   const next = nextResearchPosition(track, token, currentPosition);
   const nextMagnifying = token === 'magnifying' ? next : magnifyingPosition;
   const nextJournal = token === 'journal' ? next : journalPosition;
-  if (nextJournal > nextMagnifying) {
-    throw new Error('Journal cannot advance ahead of the magnifying glass');
+  if (nextJournal > nextMagnifying + journalMaxLead) {
+    throw new Error(`Journal cannot advance more than ${journalMaxLead} row(s) ahead of the magnifying glass`);
   }
   return next;
 }
@@ -62,9 +73,6 @@ export function researchScore(
 ): number {
   if (!Number.isInteger(templeArrivalPoints) || templeArrivalPoints < 0) {
     throw new Error('Temple arrival points must be a non-negative integer');
-  }
-  if (journalPosition > magnifyingPosition) {
-    throw new Error('Journal cannot be ahead of the magnifying glass');
   }
   return researchRowPoints(track, 'magnifying', magnifyingPosition)
     + researchRowPoints(track, 'journal', journalPosition)
