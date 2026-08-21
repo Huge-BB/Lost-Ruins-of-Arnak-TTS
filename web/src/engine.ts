@@ -1,4 +1,4 @@
-import type { GameAction, GameState, PlayerId, Resource } from './types.ts';
+import type { EngineContext, GameAction, GameState, PlayerId, Resource } from './types.ts';
 
 const MAX_ROUNDS = 5;
 
@@ -8,6 +8,8 @@ const STARTING_RESOURCES = [
   { coin: 2, compass: 1 },
   { coin: 1, compass: 2 },
 ] as const;
+
+const EMPTY_CONTEXT: EngineContext = { cards: {} };
 
 const emptyResources = () => ({
   tablet: 0,
@@ -49,7 +51,7 @@ export function createGame(playerIds: PlayerId[]): GameState {
     players,
     playerOrder: [...playerIds],
     sites: {},
-    market: { items: [], artifacts: [] },
+    market: { items: [], artifacts: [], itemDeck: [], artifactDeck: [] },
     research: {
       magnifying: Object.fromEntries(playerIds.map(id => [id, 0])),
       journal: Object.fromEntries(playerIds.map(id => [id, 0])),
@@ -100,6 +102,43 @@ function rotateFirstPlayer(state: GameState): PlayerId {
   return state.playerOrder[(index + 1) % state.playerOrder.length];
 }
 
+function refillMarketSlot(state: GameState, type: 'Item' | 'Artifact') {
+  const row = type === 'Item' ? state.market.items : state.market.artifacts;
+  const deck = type === 'Item' ? state.market.itemDeck : state.market.artifactDeck;
+  const nextCard = deck.shift();
+  if (nextCard) row.push(nextCard);
+}
+
+function buyCard(state: GameState, action: Extract<GameAction, { type: 'BUY_CARD' }>, context: EngineContext) {
+  assertPlaying(state);
+  assertCurrentPlayer(state, action.playerId);
+
+  const card = context.cards[action.cardId];
+  if (!card) throw new Error(`Unknown card: ${action.cardId}`);
+  if (card.type !== 'Item' && card.type !== 'Artifact') throw new Error('Card cannot be bought from the market');
+
+  const row = card.type === 'Item' ? state.market.items : state.market.artifacts;
+  const index = row.indexOf(action.cardId);
+  if (index < 0) throw new Error('Card is not available in the market');
+
+  const cost = card.cost ?? 0;
+  const resource: Resource = card.type === 'Item' ? 'coin' : 'compass';
+  spendResource(state, action.playerId, resource, cost);
+  row.splice(index, 1);
+
+  const player = assertPlayer(state, action.playerId);
+  if (card.type === 'Item') {
+    // Newly bought items are placed at the bottom of the player's deck.
+    player.deck.push(card.id);
+  } else {
+    // Artifacts are resolved immediately; effect resolution will be handled by the
+    // card-effect engine. Keeping it in playedCards models its post-purchase zone.
+    player.playedCards.push(card.id);
+  }
+
+  refillMarketSlot(state, card.type);
+}
+
 function finishRound(state: GameState) {
   for (const site of Object.values(state.sites)) delete site.occupiedBy;
   for (const player of Object.values(state.players)) {
@@ -119,7 +158,7 @@ function finishRound(state: GameState) {
   state.currentPlayer = state.firstPlayer;
 }
 
-export function reduce(state: GameState, action: GameAction): GameState {
+export function reduce(state: GameState, action: GameAction, context: EngineContext = EMPTY_CONTEXT): GameState {
   const next = structuredClone(state);
 
   switch (action.type) {
@@ -165,6 +204,10 @@ export function reduce(state: GameState, action: GameAction): GameState {
       site.occupiedBy = action.playerId;
       return next;
     }
+
+    case 'BUY_CARD':
+      buyCard(next, action, context);
+      return next;
 
     case 'END_TURN': {
       assertPlaying(next);
