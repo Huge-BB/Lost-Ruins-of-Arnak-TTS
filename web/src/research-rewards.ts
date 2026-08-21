@@ -1,19 +1,18 @@
-import type { GameState, PlayerId, ResearchNodeDefinition, ResearchToken, Resource } from './types.ts';
+import type { GameState, PlayerId, ResearchNodeDefinition, ResearchReward, ResearchToken, Resource } from './types.ts';
 
-function isGainResourceReward(reward: unknown): reward is { type: 'GAIN_RESOURCE'; resource: Resource; amount: number } {
-  if (!reward || typeof reward !== 'object') return false;
-  const value = reward as Record<string, unknown>;
-  return value.type === 'GAIN_RESOURCE'
-    && typeof value.resource === 'string'
-    && Number.isInteger(value.amount)
-    && Number(value.amount) >= 0;
+function isGainResourceReward(reward: ResearchReward): reward is { type: 'GAIN_RESOURCE'; resource: Resource; amount: number } {
+  return reward.type === 'GAIN_RESOURCE'
+    && typeof reward.resource === 'string'
+    && Number.isInteger(reward.amount)
+    && Number(reward.amount) >= 0;
 }
 
-function enqueuePending(state: GameState, playerId: PlayerId, sourceId: string, reward: unknown) {
+function enqueuePending(state: GameState, playerId: PlayerId, sourceId: string, reward: ResearchReward) {
   state.pendingRewards.push({
     playerId,
     sourceId,
-    code: `research:${JSON.stringify(reward)}`,
+    code: `research:${reward.type}`,
+    payload: structuredClone(reward),
   });
 }
 
@@ -21,9 +20,9 @@ export function resolveResearchReward(
   state: GameState,
   playerId: PlayerId,
   sourceId: string,
-  reward: unknown,
+  reward: ResearchReward | undefined,
 ) {
-  if (reward == null) return;
+  if (!reward) return;
   if (isGainResourceReward(reward)) {
     const player = state.players[playerId];
     if (!player) throw new Error(`Unknown player: ${playerId}`);
