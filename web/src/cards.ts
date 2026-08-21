@@ -25,15 +25,9 @@ export function buildBaseGameCardPools(context: EngineContext): BaseGameCardPool
     if (card.expansion !== 'Base Game') continue;
 
     switch (card.type) {
-      case 'Item':
-        items.push(card.id);
-        break;
-      case 'Artifact':
-        artifacts.push(card.id);
-        break;
-      case 'Fear':
-        fear.push(card.id);
-        break;
+      case 'Item': items.push(card.id); break;
+      case 'Artifact': artifacts.push(card.id); break;
+      case 'Fear': fear.push(card.id); break;
       case 'Starter': {
         if (!card.color) throw new Error(`Base-game starter ${card.id} is missing color metadata`);
         (startersByColor[card.color] ??= []).push(card.id);
@@ -46,7 +40,6 @@ export function buildBaseGameCardPools(context: EngineContext): BaseGameCardPool
   artifacts.sort();
   fear.sort();
   for (const cards of Object.values(startersByColor)) cards.sort();
-
   return { items, artifacts, startersByColor, fear };
 }
 
@@ -57,9 +50,7 @@ export function validateBaseGameCardPools(pools: BaseGameCardPools) {
 
   for (const color of BASE_COLORS) {
     const starters = pools.startersByColor[color] ?? [];
-    if (starters.length !== 4) {
-      throw new Error(`Expected 4 base-game starter cards for ${color}, found ${starters.length}`);
-    }
+    if (starters.length !== 4) throw new Error(`Expected 4 base-game starter cards for ${color}, found ${starters.length}`);
   }
 }
 
@@ -76,6 +67,7 @@ export function dealMarketForRound(round: number, itemDeck: CardId[], artifactDe
     items: remainingItems.splice(0, itemCount),
     artifactDeck: remainingArtifacts,
     itemDeck: remainingItems,
+    exiled: [],
   };
 }
 
@@ -93,11 +85,7 @@ export function prepareBaseGameSetup(context: EngineContext, playerCount: number
   const playerDecks = BASE_COLORS.slice(0, playerCount).map((color, index) => {
     const sixCards = [...pools.startersByColor[color], fearId, fearId];
     const shuffled = shuffleWithSeed(sixCards, `${seed}:player:${index}`);
-    return {
-      color,
-      hand: shuffled.slice(0, 5),
-      deck: shuffled.slice(5),
-    };
+    return { color, hand: shuffled.slice(0, 5), deck: shuffled.slice(5) };
   });
 
   return { market, playerDecks };
