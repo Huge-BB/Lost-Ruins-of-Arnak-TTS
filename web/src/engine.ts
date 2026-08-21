@@ -7,6 +7,7 @@ import type { EngineContext, GameAction, GameState, PlayerColor, PlayerId, Resou
 
 const MAX_ROUNDS = 5;
 const PLAYER_COLORS: PlayerColor[] = ['Yellow', 'Green', 'Blue', 'Red'];
+const DISCOVERY_COMPASS_COST = { 1: 3, 2: 6 } as const;
 
 const STARTING_RESOURCES = [
   { coin: 2, compass: 0 },
@@ -30,12 +31,13 @@ export function createGame(playerIds: PlayerId[]): GameState {
     hasPassed: false,
     researchMagnifying: 0,
     researchJournal: 0,
-    deck: [], hand: [], discard: [], playedCards: [],
+    deck: [], hand: [], discard: [], playedCards: [], idols: [],
   }]));
   return {
     version: 1, phase: 'setup', round: 1,
     firstPlayer: playerIds[0], currentPlayer: playerIds[0],
     players, playerOrder: [...playerIds], sites: {},
+    discovery: { level1Deck: [], level2Deck: [], guardianDeck: [], idolDeck: [] },
     market: { items: [], artifacts: [], itemDeck: [], artifactDeck: [], exiled: [] },
     research: {
       magnifying: Object.fromEntries(playerIds.map(id => [id, 0])),
@@ -101,6 +103,17 @@ function advanceMarketToNextRound(state: GameState) {
   state.round += 1;
   refillMarketForRound(state);
 }
+function setupDiscoveryDecks(state: GameState, context: EngineContext, seed: string) {
+  const sites = Object.values(context.sites ?? {}).filter(site => site.expansion === 'Base Game');
+  const level1 = sites.filter(site => site.level === 1).map(site => site.id).sort();
+  const level2 = sites.filter(site => site.level === 2).map(site => site.id).sort();
+  const guardians = Object.values(context.guardians ?? {}).filter(x => x.expansion === 'Base Game').map(x => x.id).sort();
+  const idols = Object.values(context.idols ?? {}).filter(x => x.expansion === 'Base Game').map(x => x.id).sort();
+  state.discovery.level1Deck = shuffleWithSeed(level1, `${seed}:sites:1`);
+  state.discovery.level2Deck = shuffleWithSeed(level2, `${seed}:sites:2`);
+  state.discovery.guardianDeck = shuffleWithSeed(guardians, `${seed}:guardians`);
+  state.discovery.idolDeck = shuffleWithSeed(idols, `${seed}:idols`);
+}
 function playCard(state: GameState, action: Extract<GameAction, { type: 'PLAY_CARD' }>, context: EngineContext) {
   assertPlaying(state); assertCurrentPlayer(state, action.playerId);
   const player = assertPlayer(state, action.playerId);
@@ -136,6 +149,41 @@ function resolveSite(state: GameState, playerId: PlayerId, siteId: string, conte
   if (!definition) throw new Error(`Unknown site tile: ${site.tileId}`);
   if (definition.level !== site.level) throw new Error(`Site tile level mismatch: ${site.tileId}`);
   resolveRewardCode(state, playerId, site.tileId, definition.rewardCode, context);
+}
+function takeIdol(state: GameState, playerId: PlayerId, faceUp: boolean, context: EngineContext) {
+  const idolId = state.discovery.idolDeck.shift();
+  if (!idolId) throw new Error('Idol deck is empty');
+  const idol = context.idols?.[idolId];
+  if (!idol) throw new Error(`Unknown idol: ${idolId}`);
+  state.players[playerId].idols.push({ id: idolId, faceUp });
+  if (faceUp) resolveRewardCode(state, playerId, idolId, idol.rewardCode, context);
+}
+function discoverSite(state: GameState, action: Extract<GameAction, { type: 'DISCOVER_SITE' }>, context: EngineContext) {
+  assertPlaying(state); assertCurrentPlayer(state, action.playerId);
+  const player = assertPlayer(state, action.playerId);
+  const site = state.sites[action.siteId];
+  if (!site) throw new Error(`Unknown site: ${action.siteId}`);
+  if (site.tileId) throw new Error('Site has already been discovered');
+  if (site.occupiedBy) throw new Error('Site is occupied');
+  if (player.availableWorkers < 1) throw new Error('No available worker');
+
+  const tileDeck = site.level === 1 ? state.discovery.level1Deck : state.discovery.level2Deck;
+  if (tileDeck.length === 0) throw new Error(`Level ${site.level} site deck is empty`);
+  if (state.discovery.guardianDeck.length === 0) throw new Error('Guardian deck is empty');
+  const requiredIdols = site.level === 2 ? 2 : 1;
+  if (state.discovery.idolDeck.length < requiredIdols) throw new Error('Not enough idols to discover site');
+
+  payTravelFromHand(state, action.playerId, action.paymentCardIds ?? [], context, action.siteId);
+  spendResource(state, action.playerId, 'compass', DISCOVERY_COMPASS_COST[site.level]);
+  player.availableWorkers -= 1;
+  site.occupiedBy = action.playerId;
+
+  takeIdol(state, action.playerId, true, context);
+  if (site.level === 2) takeIdol(state, action.playerId, false, context);
+
+  site.tileId = tileDeck.shift()!;
+  resolveSite(state, action.playerId, action.siteId, context);
+  site.guardian = state.discovery.guardianDeck.shift()!;
 }
 function buyCard(state: GameState, action: Extract<GameAction, { type: 'BUY_CARD' }>, context: EngineContext) {
   assertPlaying(state); assertCurrentPlayer(state, action.playerId);
@@ -186,10 +234,12 @@ export function reduce(state: GameState, action: GameAction, context: EngineCont
         next.players[playerId].resources.coin = starting.coin;
         next.players[playerId].resources.compass = starting.compass;
       });
+      const seed = action.seed ?? 'default';
+      next.setupSeed = seed;
+      setupDiscoveryDecks(next, context, seed);
       if (Object.keys(context.cards).length > 0) {
-        const seed = action.seed ?? 'default';
         const setup = prepareBaseGameSetup(context, next.playerOrder.length, seed);
-        next.setupSeed = seed; next.market = setup.market;
+        next.market = setup.market;
         next.playerOrder.forEach((playerId, index) => {
           const playerSetup = setup.playerDecks[index];
           next.players[playerId].color = playerSetup.color;
@@ -216,6 +266,7 @@ export function reduce(state: GameState, action: GameAction, context: EngineCont
       const player = assertPlayer(next, action.playerId);
       const site = next.sites[action.siteId];
       if (!site) throw new Error(`Unknown site: ${action.siteId}`);
+      if (!site.tileId) throw new Error('Undiscovered sites must use DISCOVER_SITE');
       if (site.occupiedBy) throw new Error('Site is occupied');
       if (player.availableWorkers < 1) throw new Error('No available worker');
       payTravelFromHand(next, action.playerId, action.paymentCardIds ?? [], context, action.siteId);
@@ -224,6 +275,7 @@ export function reduce(state: GameState, action: GameAction, context: EngineCont
       resolveSite(next, action.playerId, action.siteId, context);
       return next;
     }
+    case 'DISCOVER_SITE': discoverSite(next, action, context); return next;
     case 'BUY_CARD': buyCard(next, action, context); return next;
     case 'END_TURN': {
       assertPlaying(next); assertCurrentPlayer(next, action.playerId);
