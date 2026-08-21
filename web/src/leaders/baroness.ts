@@ -10,6 +10,7 @@ function removeCardEverywhere(player: { hand:string[]; deck:string[]; discard:st
     }
   }
 }
+function removeAll(zone:string[],cardId:string){let index=zone.indexOf(cardId);while(index>=0){zone.splice(index,1);index=zone.indexOf(cardId);}}
 
 export const baronessLeader: LeaderRules = {
   id: 'baroness',
@@ -39,6 +40,7 @@ export const baronessLeader: LeaderRules = {
     const cardId = leader.data.specialDeliveryCardId as string | undefined;
     if (!cardId) return;
     removeCardEverywhere(player, cardId);
+    removeAll(state.market.exiled,cardId);
     player.hand.push(cardId);
   },
 };
