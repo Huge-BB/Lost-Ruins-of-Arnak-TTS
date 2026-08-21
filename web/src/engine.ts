@@ -1,6 +1,7 @@
 import { prepareBaseGameSetup } from './cards.ts';
 import { applyCardEffects, getCardEffects } from './effects.ts';
 import { shuffleWithSeed } from './rng.ts';
+import { addGuardianFear, resolveRewardCode } from './site-rewards.ts';
 import { canPayTravel, hasTravelCost } from './travel.ts';
 import type { EngineContext, GameAction, GameState, PlayerColor, PlayerId, Resource } from './types.ts';
 
@@ -15,12 +16,10 @@ const STARTING_RESOURCES = [
 ] as const;
 
 const EMPTY_CONTEXT: EngineContext = { cards: {} };
-
 const emptyResources = () => ({ tablet: 0, arrowhead: 0, jewel: 0, coin: 0, compass: 0, fear: 0 });
 
 export function createGame(playerIds: PlayerId[]): GameState {
   if (playerIds.length < 1 || playerIds.length > 4) throw new Error('Arnak supports 1-4 players');
-
   const players = Object.fromEntries(playerIds.map((id, index) => [id, {
     id,
     name: `Player ${index + 1}`,
@@ -33,7 +32,6 @@ export function createGame(playerIds: PlayerId[]): GameState {
     researchJournal: 0,
     deck: [], hand: [], discard: [], playedCards: [],
   }]));
-
   return {
     version: 1, phase: 'setup', round: 1,
     firstPlayer: playerIds[0], currentPlayer: playerIds[0],
@@ -43,6 +41,7 @@ export function createGame(playerIds: PlayerId[]): GameState {
       magnifying: Object.fromEntries(playerIds.map(id => [id, 0])),
       journal: Object.fromEntries(playerIds.map(id => [id, 0])),
     },
+    pendingRewards: [],
   };
 }
 
@@ -130,6 +129,14 @@ function payTravelFromHand(state: GameState, playerId: PlayerId, cardIds: string
     player.playedCards.push(cardId);
   }
 }
+function resolveSite(state: GameState, playerId: PlayerId, siteId: string, context: EngineContext) {
+  const site = state.sites[siteId];
+  if (!site.tileId) return;
+  const definition = context.sites?.[site.tileId];
+  if (!definition) throw new Error(`Unknown site tile: ${site.tileId}`);
+  if (definition.level !== site.level) throw new Error(`Site tile level mismatch: ${site.tileId}`);
+  resolveRewardCode(state, playerId, site.tileId, definition.rewardCode, context);
+}
 function buyCard(state: GameState, action: Extract<GameAction, { type: 'BUY_CARD' }>, context: EngineContext) {
   assertPlaying(state); assertCurrentPlayer(state, action.playerId);
   const card = context.cards[action.cardId];
@@ -155,9 +162,15 @@ function cleanupPlayerForNextRound(state: GameState, playerId: PlayerId) {
   }
   while (player.hand.length < 5 && player.deck.length > 0) player.hand.push(player.deck.shift()!);
 }
-function finishRound(state: GameState) {
-  for (const site of Object.values(state.sites)) delete site.occupiedBy;
+function resolveGuardianFear(state: GameState, context: EngineContext) {
+  for (const site of Object.values(state.sites)) {
+    if (site.guardian && site.occupiedBy) addGuardianFear(state, site.occupiedBy, context);
+  }
+}
+function finishRound(state: GameState, context: EngineContext) {
+  resolveGuardianFear(state, context);
   for (const playerId of state.playerOrder) cleanupPlayerForNextRound(state, playerId);
+  for (const site of Object.values(state.sites)) delete site.occupiedBy;
   if (state.round >= MAX_ROUNDS) { state.phase = 'finished'; return; }
   advanceMarketToNextRound(state);
   state.firstPlayer = rotateFirstPlayer(state); state.currentPlayer = state.firstPlayer;
@@ -206,7 +219,10 @@ export function reduce(state: GameState, action: GameAction, context: EngineCont
       if (site.occupiedBy) throw new Error('Site is occupied');
       if (player.availableWorkers < 1) throw new Error('No available worker');
       payTravelFromHand(next, action.playerId, action.paymentCardIds ?? [], context, action.siteId);
-      player.availableWorkers -= 1; site.occupiedBy = action.playerId; return next;
+      player.availableWorkers -= 1;
+      site.occupiedBy = action.playerId;
+      resolveSite(next, action.playerId, action.siteId, context);
+      return next;
     }
     case 'BUY_CARD': buyCard(next, action, context); return next;
     case 'END_TURN': {
@@ -219,7 +235,7 @@ export function reduce(state: GameState, action: GameAction, context: EngineCont
       assertPlaying(next); assertCurrentPlayer(next, action.playerId);
       next.players[action.playerId].hasPassed = true;
       const following = nextActivePlayer(next, action.playerId);
-      if (following) next.currentPlayer = following; else finishRound(next);
+      if (following) next.currentPlayer = following; else finishRound(next, context);
       return next;
     }
   }
