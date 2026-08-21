@@ -81,7 +81,6 @@
       "bridges": [
         { "from": "lizard:start", "to": "lizard:r0:p0", "cost": {}, "verified": false },
         { "from": "lizard:start", "to": "lizard:r0:p1", "cost": {}, "verified": false },
-        { "from": "lizard:start", "to": "lizard:r0:p2", "cost": {}, "verified": false },
         { "from": "lizard:r0:p0", "to": "lizard:r1:p0", "cost": {}, "verified": false },
         { "from": "lizard:r0:p1", "to": "lizard:r1:p0", "cost": {}, "verified": false },
         { "from": "lizard:r0:p1", "to": "lizard:r1:p1", "cost": {}, "verified": false },
