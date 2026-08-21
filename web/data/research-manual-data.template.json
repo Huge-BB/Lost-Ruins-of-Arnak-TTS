@@ -2,15 +2,17 @@
   "$schemaVersion": 2,
   "notes": [
     "This file is a human-maintained overlay for research data that TTS does not encode structurally.",
-    "Topology (path nodes, forward edges, scores) should come from src/ResearchTrackData.ttslua.",
+    "Topology (path nodes, forward edges, scores) comes from src/ResearchTrackData.ttslua.",
     "Fill costs/rewards visible on the printed board/rulebook and verify them against the physical board.",
     "Resource keys: coin, compass, tablet, arrowhead, jewel.",
     "Use nodeOverrides only for irregular printed spaces, such as one physical space spanning levels 4 and 5.",
     "researchLevel is the logical level used for movement restrictions; spansLevels is descriptive UI metadata.",
-    "Reward data should remain declarative; the engine resolves it separately."
+    "templeArrivalPoints is [first, second, third, fourth] and must be recorded separately for each board.",
+    "Supported research reward examples include GAIN_RESOURCE, CLAIM_ASSISTANT (silver), and UPGRADE_ASSISTANT (gold)."
   ],
   "boards": {
     "bird": {
+      "templeArrivalPoints": [0, 0, 0, 0],
       "bridges": [
         {
           "from": "bird:start",
@@ -22,7 +24,6 @@
             "arrowhead": 0,
             "jewel": 0
           },
-          "reward": null,
           "verified": false,
           "comment": "Example entry only. Replace values after checking the board."
         }
@@ -40,13 +41,27 @@
         {
           "node": "bird:r0:p0",
           "token": "magnifying",
-          "reward": null,
+          "reward": {
+            "type": "CLAIM_ASSISTANT",
+            "level": "silver"
+          },
           "verified": false,
-          "comment": "Use this only when a reward belongs to the destination node rather than the bridge."
+          "comment": "Silver assistant icon: player chooses one visible assistant from the supply."
+        },
+        {
+          "node": "bird:r1:p0",
+          "token": "journal",
+          "reward": {
+            "type": "UPGRADE_ASSISTANT",
+            "level": "gold"
+          },
+          "verified": false,
+          "comment": "Gold assistant icon: player chooses one owned silver assistant to upgrade."
         }
       ]
     },
     "snake": {
+      "templeArrivalPoints": [0, 0, 0, 0],
       "bridges": [],
       "nodeOverrides": [],
       "nodeRewards": []
