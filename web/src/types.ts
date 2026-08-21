@@ -167,6 +167,8 @@ export interface ResearchState {
   board: ResearchBoardId;
   magnifying: Record<PlayerId, number>;
   journal: Record<PlayerId, number>;
+  templeArrivals: PlayerId[];
+  templeArrivalPoints: Record<PlayerId, number>;
 }
 
 export interface GameState {
