@@ -1,0 +1,15 @@
+{
+  "$schemaVersion": 2,
+  "boards": {
+    "bird": {
+      "bridges": [],
+      "nodeOverrides": [],
+      "nodeRewards": []
+    },
+    "snake": {
+      "bridges": [],
+      "nodeOverrides": [],
+      "nodeRewards": []
+    }
+  }
+}
