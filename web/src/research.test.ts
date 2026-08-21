@@ -10,13 +10,13 @@ async function loadTracks(): Promise<Record<string, ResearchTrackDefinition>> {
   return JSON.parse(raw);
 }
 
-test('extracts the Bird and Snake base-game research tracks', async () => {
+test('extracts the Bird and Snake base-game research tracks without assuming arrival values', async () => {
   const tracks = await loadTracks();
   assert.deepEqual(Object.keys(tracks).sort(), ['bird', 'snake']);
   assert.equal(tracks.bird.rows.length, 7);
   assert.equal(tracks.snake.rows.length, 7);
-  assert.deepEqual(tracks.bird.templePoints, [23, 21, 20, 19]);
-  assert.deepEqual(tracks.snake.templePoints, [23, 21, 20, 19]);
+  assert.equal(tracks.bird.templeArrivalPoints, undefined);
+  assert.equal(tracks.snake.templeArrivalPoints, undefined);
 });
 
 test('Bird research scoring is preserved from start toward the temple', async () => {
@@ -54,19 +54,9 @@ test('research position keeps the printed starting space separate from row zero'
 
 test('journal lead limit is a per-player research rule', async () => {
   const { bird } = await loadTracks();
-
-  assert.throws(
-    () => nextLegalResearchPosition(bird, 'journal', 0, 0, 0),
-    /cannot advance more than 0 row/,
-  );
-  assert.equal(
-    nextLegalResearchPosition(bird, 'journal', 0, 0, 0, { journalMaxLead: 1 }),
-    1,
-  );
-  assert.throws(
-    () => nextLegalResearchPosition(bird, 'journal', 1, 0, 1, { journalMaxLead: 1 }),
-    /cannot advance more than 1 row/,
-  );
+  assert.throws(() => nextLegalResearchPosition(bird, 'journal', 0, 0, 0), /cannot advance more than 0 row/);
+  assert.equal(nextLegalResearchPosition(bird, 'journal', 0, 0, 0, { journalMaxLead: 1 }), 1);
+  assert.throws(() => nextLegalResearchPosition(bird, 'journal', 1, 0, 1, { journalMaxLead: 1 }), /cannot advance more than 1 row/);
 });
 
 test('only the magnifying glass can enter the temple', async () => {
@@ -78,10 +68,12 @@ test('only the magnifying glass can enter the temple', async () => {
   assert.throws(() => researchRowPoints(bird, 'journal', bird.rows.length), /Journal cannot enter the temple/);
 });
 
-test('temple arrival awards preserve the TTS research-track order', async () => {
+test('temple arrival awards require board-specific manual values', async () => {
   const { bird } = await loadTracks();
-  assert.deepEqual([0, 1, 2, 3].map(index => templeArrivalAward(bird, index)), [23, 21, 20, 19]);
-  assert.throws(() => templeArrivalAward(bird, 4), /No temple arrival award/);
+  assert.throws(() => templeArrivalAward(bird, 0), /have not been recorded/);
+  const configured = { ...bird, templeArrivalPoints: [12, 9, 6, 3] as [number, number, number, number] };
+  assert.deepEqual([0, 1, 2, 3].map(index => templeArrivalAward(configured, index)), [12, 9, 6, 3]);
+  assert.throws(() => templeArrivalAward(configured, 4), /No temple arrival award/);
 });
 
 test('assistant-row metadata can be queried independently of TTS coordinates', async () => {
@@ -102,10 +94,8 @@ test('ADVANCE_RESEARCH moves the selected token from the printed start onto row 
   const researchTracks = await loadTracks();
   const context: EngineContext = { cards: {}, researchTracks };
   let state = reduce(createGame(['p1']), { type: 'START_GAME' }, context);
-
   assert.equal(state.research.magnifying.p1, RESEARCH_START_POSITION);
   state = reduce(state, { type: 'ADVANCE_RESEARCH', playerId: 'p1', track: 'magnifying' }, context);
-
   assert.equal(state.research.magnifying.p1, 0);
   assert.equal(state.players.p1.researchMagnifying, 0);
 });
@@ -116,11 +106,7 @@ test('base player journal cannot advance ahead of magnifying through reducer', a
   let state = reduce(createGame(['p1']), { type: 'START_GAME' }, context);
   state = reduce(state, { type: 'ADVANCE_RESEARCH', playerId: 'p1', track: 'magnifying' }, context);
   state = reduce(state, { type: 'ADVANCE_RESEARCH', playerId: 'p1', track: 'journal' }, context);
-
-  assert.throws(
-    () => reduce(state, { type: 'ADVANCE_RESEARCH', playerId: 'p1', track: 'journal' }, context),
-    /cannot advance more than 0 row/,
-  );
+  assert.throws(() => reduce(state, { type: 'ADVANCE_RESEARCH', playerId: 'p1', track: 'journal' }, context), /cannot advance more than 0 row/);
 });
 
 test('journalist-style rule allows journal to lead by exactly one row', async () => {
@@ -131,13 +117,9 @@ test('journalist-style rule allows journal to lead by exactly one row', async ()
   state = reduce(state, { type: 'ADVANCE_RESEARCH', playerId: 'p1', track: 'magnifying' }, context);
   state = reduce(state, { type: 'ADVANCE_RESEARCH', playerId: 'p1', track: 'journal' }, context);
   state = reduce(state, { type: 'ADVANCE_RESEARCH', playerId: 'p1', track: 'journal' }, context);
-
   assert.equal(state.research.magnifying.p1, 0);
   assert.equal(state.research.journal.p1, 1);
-  assert.throws(
-    () => reduce(state, { type: 'ADVANCE_RESEARCH', playerId: 'p1', track: 'journal' }, context),
-    /cannot advance more than 1 row/,
-  );
+  assert.throws(() => reduce(state, { type: 'ADVANCE_RESEARCH', playerId: 'p1', track: 'journal' }, context), /cannot advance more than 1 row/);
 });
 
 test('START_GAME can select the Snake research board', async () => {
@@ -155,9 +137,5 @@ test('journal cannot advance beyond its top scored row through the reducer', asy
   state.players.p1.researchMagnifying = researchTracks.bird.rows.length - 1;
   state.research.journal.p1 = researchTracks.bird.rows.length - 1;
   state.players.p1.researchJournal = researchTracks.bird.rows.length - 1;
-
-  assert.throws(
-    () => reduce(state, { type: 'ADVANCE_RESEARCH', playerId: 'p1', track: 'journal' }, context),
-    /cannot advance farther/,
-  );
+  assert.throws(() => reduce(state, { type: 'ADVANCE_RESEARCH', playerId: 'p1', track: 'journal' }, context), /cannot advance farther/);
 });
