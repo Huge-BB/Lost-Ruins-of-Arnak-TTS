@@ -1,5 +1,6 @@
 import { prepareBaseGameSetup } from './cards.ts';
 import { applyCardEffects, getCardEffects } from './effects.ts';
+import { nextResearchPosition, RESEARCH_START_POSITION } from './research.ts';
 import { shuffleWithSeed } from './rng.ts';
 import { addGuardianFear, resolveRewardCode } from './site-rewards.ts';
 import { canPayTravel, hasTravelCost } from './travel.ts';
@@ -29,8 +30,8 @@ export function createGame(playerIds: PlayerId[]): GameState {
     workers: 2,
     availableWorkers: 2,
     hasPassed: false,
-    researchMagnifying: 0,
-    researchJournal: 0,
+    researchMagnifying: RESEARCH_START_POSITION,
+    researchJournal: RESEARCH_START_POSITION,
     deck: [], hand: [], discard: [], playedCards: [], idols: [],
   }]));
   return {
@@ -40,8 +41,9 @@ export function createGame(playerIds: PlayerId[]): GameState {
     discovery: { level1Deck: [], level2Deck: [], guardianDeck: [], idolDeck: [] },
     market: { items: [], artifacts: [], itemDeck: [], artifactDeck: [], exiled: [] },
     research: {
-      magnifying: Object.fromEntries(playerIds.map(id => [id, 0])),
-      journal: Object.fromEntries(playerIds.map(id => [id, 0])),
+      board: 'bird',
+      magnifying: Object.fromEntries(playerIds.map(id => [id, RESEARCH_START_POSITION])),
+      journal: Object.fromEntries(playerIds.map(id => [id, RESEARCH_START_POSITION])),
     },
     pendingRewards: [],
   };
@@ -200,6 +202,22 @@ function buyCard(state: GameState, action: Extract<GameAction, { type: 'BUY_CARD
   if (card.type === 'Item') player.deck.push(card.id); else player.playedCards.push(card.id);
   refillMarketSlot(state, card.type);
 }
+function advanceResearch(state: GameState, action: Extract<GameAction, { type: 'ADVANCE_RESEARCH' }>, context: EngineContext) {
+  assertPlaying(state); assertCurrentPlayer(state, action.playerId);
+  const player = assertPlayer(state, action.playerId);
+  const definition = context.researchTracks?.[state.research.board];
+  if (!definition) throw new Error(`Research track data required for ${state.research.board}`);
+  const amount = action.amount ?? 1;
+  if (!Number.isInteger(amount) || amount < 1) throw new Error('Research amount must be positive');
+
+  let position = state.research[action.track][action.playerId];
+  for (let step = 0; step < amount; step += 1) {
+    position = nextResearchPosition(definition, action.track, position);
+  }
+  state.research[action.track][action.playerId] = position;
+  if (action.track === 'magnifying') player.researchMagnifying = position;
+  else player.researchJournal = position;
+}
 function cleanupPlayerForNextRound(state: GameState, playerId: PlayerId) {
   const player = state.players[playerId];
   player.availableWorkers = player.workers; player.hasPassed = false;
@@ -236,6 +254,7 @@ export function reduce(state: GameState, action: GameAction, context: EngineCont
       });
       const seed = action.seed ?? 'default';
       next.setupSeed = seed;
+      next.research.board = action.researchBoard ?? 'bird';
       setupDiscoveryDecks(next, context, seed);
       if (Object.keys(context.cards).length > 0) {
         const setup = prepareBaseGameSetup(context, next.playerOrder.length, seed);
@@ -251,15 +270,7 @@ export function reduce(state: GameState, action: GameAction, context: EngineCont
     }
     case 'GAIN_RESOURCE': addResource(next, action.playerId, action.resource, action.amount); return next;
     case 'SPEND_RESOURCE': spendResource(next, action.playerId, action.resource, action.amount); return next;
-    case 'ADVANCE_RESEARCH': {
-      assertPlaying(next);
-      const player = assertPlayer(next, action.playerId);
-      const amount = action.amount ?? 1;
-      if (!Number.isInteger(amount) || amount < 1) throw new Error('Research amount must be positive');
-      const key = action.track;
-      player[key === 'magnifying' ? 'researchMagnifying' : 'researchJournal'] += amount;
-      next.research[key][action.playerId] += amount; return next;
-    }
+    case 'ADVANCE_RESEARCH': advanceResearch(next, action, context); return next;
     case 'PLAY_CARD': playCard(next, action, context); return next;
     case 'PLACE_WORKER': {
       assertPlaying(next); assertCurrentPlayer(next, action.playerId);
