@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildBaseGameCardPools, cardRecord, dealMarketForRound, validateBaseGameCardPools } from './cards.ts';
+import { buildBaseGameCardPools, cardRecord, dealMarketForRound, prepareBaseGameSetup, validateBaseGameCardPools } from './cards.ts';
 import type { CardDefinition } from './types.ts';
 
 function starter(id: string, color: string): CardDefinition {
@@ -8,8 +8,12 @@ function starter(id: string, color: string): CardDefinition {
 }
 
 const baseCards: CardDefinition[] = [
-  { id: 'item-1', name: 'Item', type: 'Item', expansion: 'Base Game', cost: 1 },
-  { id: 'artifact-1', name: 'Artifact', type: 'Artifact', expansion: 'Base Game', cost: 1 },
+  ...Array.from({ length: 8 }, (_, index) => ({
+    id: `item-${index + 1}`, name: `Item ${index + 1}`, type: 'Item' as const, expansion: 'Base Game', cost: 1,
+  })),
+  ...Array.from({ length: 6 }, (_, index) => ({
+    id: `artifact-${index + 1}`, name: `Artifact ${index + 1}`, type: 'Artifact' as const, expansion: 'Base Game', cost: 1,
+  })),
   { id: 'fear', name: 'Fear', type: 'Fear', expansion: 'Base Game', points: -1 },
   ...['Yellow', 'Green', 'Blue', 'Red'].flatMap((color, colorIndex) =>
     Array.from({ length: 4 }, (_, index) => starter(`${colorIndex}-${index}`, color)),
@@ -17,11 +21,13 @@ const baseCards: CardDefinition[] = [
   { id: 'exp-item', name: 'Expansion Item', type: 'Item', expansion: 'Expedition Leaders', cost: 1 },
 ];
 
-test('buildBaseGameCardPools separates base-game market, starter, and fear cards', () => {
-  const pools = buildBaseGameCardPools({ cards: cardRecord(baseCards) });
+const context = { cards: cardRecord(baseCards) };
 
-  assert.deepEqual(pools.items, ['item-1']);
-  assert.deepEqual(pools.artifacts, ['artifact-1']);
+test('buildBaseGameCardPools separates base-game market, starter, and fear cards', () => {
+  const pools = buildBaseGameCardPools(context);
+
+  assert.equal(pools.items.length, 8);
+  assert.equal(pools.artifacts.length, 6);
   assert.deepEqual(pools.fear, ['fear']);
   assert.equal(pools.startersByColor.Yellow.length, 4);
   assert.equal(pools.startersByColor.Red.length, 4);
@@ -45,28 +51,30 @@ test('validation requires exactly four starter cards for each base color', () =>
   assert.throws(() => validateBaseGameCardPools(pools), /Expected 4 base-game starter cards for Yellow, found 3/);
 });
 
-test('round 1 market contains one artifact and five items', () => {
-  const market = dealMarketForRound(
-    1,
-    ['i1', 'i2', 'i3', 'i4', 'i5', 'i6'],
-    ['a1', 'a2', 'a3'],
-  );
-
-  assert.deepEqual(market.artifacts, ['a1']);
-  assert.deepEqual(market.items, ['i1', 'i2', 'i3', 'i4', 'i5']);
-  assert.deepEqual(market.artifactDeck, ['a2', 'a3']);
-  assert.deepEqual(market.itemDeck, ['i6']);
+test('market card counts follow the moon staff position by round', () => {
+  const items = ['i1', 'i2', 'i3', 'i4', 'i5', 'i6'];
+  const artifacts = ['a1', 'a2', 'a3', 'a4', 'a5'];
+  for (let round = 1; round <= 5; round += 1) {
+    const market = dealMarketForRound(round, items, artifacts);
+    assert.equal(market.artifacts.length, round);
+    assert.equal(market.items.length, 6 - round);
+  }
 });
 
-test('market composition follows the moon staff split for later rounds', () => {
-  const market = dealMarketForRound(
-    4,
-    ['i1', 'i2', 'i3'],
-    ['a1', 'a2', 'a3', 'a4', 'a5'],
-  );
+test('prepareBaseGameSetup is deterministic for the same seed', () => {
+  const first = prepareBaseGameSetup(context, 2, 'room-42');
+  const second = prepareBaseGameSetup(context, 2, 'room-42');
+  assert.deepEqual(first, second);
+  assert.equal(first.market.items.length, 5);
+  assert.equal(first.market.artifacts.length, 1);
+  assert.equal(first.playerDecks[0].hand.length, 5);
+  assert.equal(first.playerDecks[0].deck.length, 1);
+  assert.equal(first.playerDecks[0].color, 'Yellow');
+  assert.equal(first.playerDecks[1].color, 'Green');
+});
 
-  assert.deepEqual(market.artifacts, ['a1', 'a2', 'a3', 'a4']);
-  assert.deepEqual(market.items, ['i1', 'i2']);
-  assert.deepEqual(market.artifactDeck, ['a5']);
-  assert.deepEqual(market.itemDeck, ['i3']);
+test('different seeds produce a different shuffled setup', () => {
+  const first = prepareBaseGameSetup(context, 2, 'room-42');
+  const second = prepareBaseGameSetup(context, 2, 'room-43');
+  assert.notDeepEqual(first, second);
 });
