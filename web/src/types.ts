@@ -206,4 +206,8 @@ export type GameAction =
   | { type: 'GAIN_RESOURCE'; playerId: PlayerId; resource: Resource; amount: number }
   | { type: 'SPEND_RESOURCE'; playerId: PlayerId; resource: Resource; amount: number }
   | { type: 'ADVANCE_RESEARCH'; playerId: PlayerId; track: ResearchToken; amount?: number }
+  | { type: 'CLAIM_ASSISTANT'; playerId: PlayerId; stackIndex: number }
+  | { type: 'UPGRADE_ASSISTANT'; playerId: PlayerId; assistantId: string }
+  | { type: 'EXHAUST_ASSISTANT'; playerId: PlayerId; assistantId: string }
+  | { type: 'REFRESH_ASSISTANT'; playerId: PlayerId; assistantId: string }
   | { type: 'BUY_CARD'; playerId: PlayerId; cardId: CardId };
