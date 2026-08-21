@@ -7,6 +7,7 @@ import { resolveLeaderPendingChoice } from './pending.ts';
 
 const cards:EngineContext['cards']={
   fear:{id:'fear',name:'Fear',type:'Fear',expansion:'Base Game'}, fear2:{id:'fear2',name:'Fear',type:'Fear',expansion:'Base Game'},
+  hidden:{id:'hidden',name:'Hidden Fear',type:'Starter',expansion:'Expedition Leaders'},
   item1:{id:'item1',name:'Item 1',type:'Item',expansion:'Base Game'}, item2:{id:'item2',name:'Item 2',type:'Item',expansion:'Base Game'},
 };
 for(const name of ['Divine Guidance','Meditation','Worldly Goods','Blindsight'])cards[`l:${name}`]={id:`l:${name}`,name,type:'Starter',expansion:'Expedition Leaders'};
@@ -23,6 +24,13 @@ test('Mystic Fear exile pending routes Fear to ritual pile',()=>{
   let s=mystic(); s.players.p1.hand=['fear']; s.pendingRewards=[{playerId:'p1',sourceId:'x',code:'leader:EXILE_OWN_CARD'}];
   s=resolveLeaderPendingChoice(s,'p1',0,{type:'card',cardId:'fear'},context);
   assert.deepEqual(s.players.p1.leader!.data.ritualPile,['fear']); assert.equal(s.pendingRewards.length,0);
+});
+
+test('Captain gains a Fear in play and a compass when Hidden Fear is exiled',()=>{
+  let s=createGame(['p1']);s.phase='playing';s.currentPlayer='p1';s.players.p1.leader={id:'captain',data:{}};s.players.p1.hand=['hidden'];
+  s.pendingRewards=[{playerId:'p1',sourceId:'x',code:'leader:EXILE_OWN_CARD'}];
+  s=resolveLeaderPendingChoice(s,'p1',0,{type:'card',cardId:'hidden'},context);
+  assert.ok(s.market.exiled.includes('hidden'));assert.ok(s.players.p1.playedCards.includes('fear'));assert.equal(s.players.p1.resources.compass,1);assert.equal(s.pendingRewards.length,0);
 });
 
 test('Baroness optional far-left market exile can resolve or skip',()=>{
