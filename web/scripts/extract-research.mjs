@@ -93,10 +93,6 @@ function extractTrack(name, section) {
     };
   });
 
-  // TTS lists rows temple -> start. Web data uses start -> temple.
-  // Keep rowsTopDown untouched because its original order is needed to map TTS forward edges.
-  // researchLevel defaults to the scored row index, but may be overridden by manual data
-  // for printed spaces that visually span or skip levels.
   const rows = [...rowsTopDown].reverse().map((row, rowIndex) => ({
     magnifyingPoints: row.magnifyingPoints,
     journalPoints: row.journalPoints,
@@ -109,7 +105,6 @@ function extractTrack(name, section) {
     })),
   }));
 
-  // forward indexes in TTS point from a row toward the next row closer to the temple.
   const bridges = [];
   for (let rowIndex = 0; rowIndex < rows.length - 1; rowIndex += 1) {
     const originalSource = rowsTopDown[rowsTopDown.length - 1 - rowIndex];
@@ -124,7 +119,6 @@ function extractTrack(name, section) {
     });
   }
 
-  // The start area is not a scored TTS row. Treat all bottom-row paths as legal first destinations.
   for (let pathIndex = 0; pathIndex < rows[0].nodes.length; pathIndex += 1) {
     bridges.unshift({
       id: `${boardId}:start->${nodeId(boardId, 0, pathIndex)}`,
@@ -133,11 +127,9 @@ function extractTrack(name, section) {
     });
   }
 
-  const templePointsMatch = section.match(/templePoints\s*=\s*\{\s*([\d,\s]+)\}/);
-  if (!templePointsMatch) throw new Error(`${name} missing templePoints`);
-  const templePoints = templePointsMatch[1].split(',').map(value => Number(value.trim())).filter(Number.isFinite);
-
-  return { id: boardId, name, rows, bridges, templePoints };
+  // Arrival-order values differ by research board and are maintained in the
+  // verified manual overlay. Do not infer them from TTS automation data.
+  return { id: boardId, name, rows, bridges };
 }
 
 const result = {
@@ -150,9 +142,11 @@ const checklist = {
   notes: [
     'Generated from ResearchTrackData.ttslua. Do not edit topology here by hand.',
     'Copy verified costs/rewards and any irregular node-level overrides into research-manual-data.json.',
+    'Record each board templeArrivalPoints separately in research-manual-data.json as first/second/third/fourth place values.',
     'researchLevel defaults to rowIndex. Override only when one printed space spans/skips logical levels.',
   ],
   boards: Object.fromEntries(Object.entries(result).map(([boardId, track]) => [boardId, {
+    templeArrivalPoints: [0, 0, 0, 0],
     nodes: track.rows.flatMap(row => row.nodes).map(node => ({ ...node, verified: false })),
     bridges: track.bridges.map(bridge => ({
       ...bridge,
