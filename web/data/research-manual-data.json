@@ -1,5 +1,5 @@
 {
-  "$schemaVersion": 2,
+  "$schemaVersion": 3,
   "boards": {
     "bird": {
       "bridges": [
@@ -21,8 +21,8 @@
         { "from": "bird:r5:p0", "to": "bird:r6:p0", "cost": { "arrowhead": 1, "tablet": 1, "coin": 1 }, "verified": true },
         { "from": "bird:r5:p1", "to": "bird:r6:p0", "cost": { "arrowhead": 1, "tablet": 1, "coin": 1 }, "verified": true },
         { "from": "bird:r5:p1", "to": "bird:r6:p1", "cost": { "jewel": 1, "tablet": 1 }, "verified": true },
-        { "from": "bird:r6:p0", "to": "bird:temple", "cost": {}, "verified": false, "comment": "Fill the printed Lost Temple entry cost." },
-        { "from": "bird:r6:p1", "to": "bird:temple", "cost": {}, "verified": false, "comment": "Fill the printed Lost Temple entry cost." }
+        { "from": "bird:r6:p0", "to": "bird:temple", "cost": {}, "rewards": [], "verified": false, "comment": "Fill the printed Lost Temple entry cost." },
+        { "from": "bird:r6:p1", "to": "bird:temple", "cost": {}, "rewards": [], "verified": false, "comment": "Fill the printed Lost Temple entry cost." }
       ],
       "nodeOverrides": [],
       "nodeRewards": []
@@ -48,8 +48,18 @@
         { "from": "snake:r4:p1", "to": "snake:r5:p1", "cost": { "tablet": 3, "compass": 1 }, "verified": true },
         { "from": "snake:r5:p0", "to": "snake:r6:p0", "cost": { "arrowhead": 1, "tablet": 1, "coin": 1 }, "verified": true },
         { "from": "snake:r5:p1", "to": "snake:r6:p0", "cost": { "arrowhead": 1, "tablet": 1, "coin": 1 }, "verified": true },
-        { "from": "snake:r6:p0", "to": "snake:temple", "cost": {}, "verified": false, "comment": "Fill the printed Lost Temple entry cost." }
+        { "from": "snake:r6:p0", "to": "snake:temple", "cost": {}, "rewards": [], "verified": false, "comment": "Fill the printed Lost Temple entry cost." }
       ],
+      "nodeOverrides": [],
+      "nodeRewards": []
+    },
+    "monkey": {
+      "bridges": [],
+      "nodeOverrides": [],
+      "nodeRewards": []
+    },
+    "lizard": {
+      "bridges": [],
       "nodeOverrides": [],
       "nodeRewards": []
     }
