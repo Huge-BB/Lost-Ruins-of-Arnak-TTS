@@ -7,6 +7,7 @@ export type LeaderPendingChoice =
   | { type:'assistant'; assistantId:string }
   | { type:'card'; cardId:CardId }
   | { type:'site'; siteId:string }
+  | { type:'archiveSwap'; archiveCardId:CardId; marketCardId:CardId }
   | { type:'ritual'; fearCount:2|3|4 }
   | { type:'skip' };
 
@@ -51,6 +52,16 @@ export function resolveLeaderPendingChoice(state:GameState,playerId:PlayerId,pen
       if(choice.type==='skip')return removePending(state,pendingIndex); if(choice.type!=='card')throw new Error('Market exile requires a card choice');
       const farLeft=state.market.items[0]; if(!farLeft||choice.cardId!==farLeft)throw new Error('Only the far-left Item may be exiled');
       const next=structuredClone(state); next.market.items.shift(); next.market.exiled.push(farLeft); if(payload.refill===true){const refill=next.market.itemDeck.shift();if(refill)next.market.items.unshift(refill);} next.pendingRewards.splice(pendingIndex,1); return next;
+    }
+    case 'leader:OPTIONAL_SWAP_ARCHIVE_ARTIFACT': {
+      if(choice.type==='skip')return removePending(state,pendingIndex);
+      if(choice.type!=='archiveSwap')throw new Error('Archive swap requires archive and market Artifact choices');
+      const leader=state.players[playerId].leader;if(leader?.id!=='professor')throw new Error('Only the Professor can swap archive Artifacts');
+      const archive=(leader.data.archive??[]) as CardId[];const archiveIndex=archive.indexOf(choice.archiveCardId);const marketIndex=state.market.artifacts.indexOf(choice.marketCardId);
+      if(archiveIndex<0)throw new Error('Chosen Artifact is not in the Professor archive');if(marketIndex<0)throw new Error('Chosen Artifact is not in the market row');
+      if(context.cards[choice.archiveCardId]?.type!=='Artifact'||context.cards[choice.marketCardId]?.type!=='Artifact')throw new Error('Archive swap requires Artifact cards');
+      const next=structuredClone(state),nextArchive=next.players[playerId].leader!.data.archive as CardId[];
+      nextArchive[archiveIndex]=choice.marketCardId;next.market.artifacts[marketIndex]=choice.archiveCardId;next.pendingRewards.splice(pendingIndex,1);return next;
     }
     case 'leader:ACTIVATE_DISCOVERED_SITE': {
       if(choice.type!=='site')throw new Error('Site activation requires a site choice'); const resolved=activateDiscoveredSiteForLeader(state,playerId,choice.siteId,context); return removePending(resolved,pendingIndex);
