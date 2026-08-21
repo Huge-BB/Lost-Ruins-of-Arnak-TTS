@@ -1,4 +1,5 @@
 import { prepareBaseGameSetup } from './cards.ts';
+import { shuffleWithSeed } from './rng.ts';
 import type { EngineContext, GameAction, GameState, PlayerColor, PlayerId, Resource } from './types.ts';
 
 const MAX_ROUNDS = 5;
@@ -23,27 +24,23 @@ const emptyResources = () => ({
 });
 
 export function createGame(playerIds: PlayerId[]): GameState {
-  if (playerIds.length < 1 || playerIds.length > 4) {
-    throw new Error('Arnak supports 1-4 players');
-  }
+  if (playerIds.length < 1 || playerIds.length > 4) throw new Error('Arnak supports 1-4 players');
 
-  const players = Object.fromEntries(
-    playerIds.map((id, index) => [id, {
-      id,
-      name: `Player ${index + 1}`,
-      color: PLAYER_COLORS[index],
-      resources: emptyResources(),
-      workers: 2,
-      availableWorkers: 2,
-      hasPassed: false,
-      researchMagnifying: 0,
-      researchJournal: 0,
-      deck: [],
-      hand: [],
-      discard: [],
-      playedCards: [],
-    }]),
-  );
+  const players = Object.fromEntries(playerIds.map((id, index) => [id, {
+    id,
+    name: `Player ${index + 1}`,
+    color: PLAYER_COLORS[index],
+    resources: emptyResources(),
+    workers: 2,
+    availableWorkers: 2,
+    hasPassed: false,
+    researchMagnifying: 0,
+    researchJournal: 0,
+    deck: [],
+    hand: [],
+    discard: [],
+    playedCards: [],
+  }]));
 
   return {
     version: 1,
@@ -54,7 +51,7 @@ export function createGame(playerIds: PlayerId[]): GameState {
     players,
     playerOrder: [...playerIds],
     sites: {},
-    market: { items: [], artifacts: [], itemDeck: [], artifactDeck: [] },
+    market: { items: [], artifacts: [], itemDeck: [], artifactDeck: [], exiled: [] },
     research: {
       magnifying: Object.fromEntries(playerIds.map(id => [id, 0])),
       journal: Object.fromEntries(playerIds.map(id => [id, 0])),
@@ -106,10 +103,33 @@ function rotateFirstPlayer(state: GameState): PlayerId {
 }
 
 function refillMarketSlot(state: GameState, type: 'Item' | 'Artifact') {
-  const row = type === 'Item' ? state.market.items : state.market.artifacts;
   const deck = type === 'Item' ? state.market.itemDeck : state.market.artifactDeck;
   const nextCard = deck.shift();
-  if (nextCard) row.push(nextCard);
+  if (!nextCard) return;
+
+  if (type === 'Item') state.market.items.push(nextCard);
+  else state.market.artifacts.unshift(nextCard);
+}
+
+function refillMarketForRound(state: GameState) {
+  const artifactTarget = state.round;
+  const itemTarget = 6 - state.round;
+
+  const drawnArtifacts = state.market.artifactDeck.splice(0, Math.max(0, artifactTarget - state.market.artifacts.length));
+  if (drawnArtifacts.length > 0) state.market.artifacts.unshift(...drawnArtifacts);
+
+  const drawnItems = state.market.itemDeck.splice(0, Math.max(0, itemTarget - state.market.items.length));
+  state.market.items.push(...drawnItems);
+}
+
+function advanceMarketToNextRound(state: GameState) {
+  const nearestArtifact = state.market.artifacts.pop();
+  const nearestItem = state.market.items.shift();
+  if (nearestArtifact) state.market.exiled.push(nearestArtifact);
+  if (nearestItem) state.market.exiled.push(nearestItem);
+
+  state.round += 1;
+  refillMarketForRound(state);
 }
 
 function buyCard(state: GameState, action: Extract<GameAction, { type: 'BUY_CARD' }>, context: EngineContext) {
@@ -130,30 +150,38 @@ function buyCard(state: GameState, action: Extract<GameAction, { type: 'BUY_CARD
   row.splice(index, 1);
 
   const player = assertPlayer(state, action.playerId);
-  if (card.type === 'Item') {
-    player.deck.push(card.id);
-  } else {
-    player.playedCards.push(card.id);
-  }
+  if (card.type === 'Item') player.deck.push(card.id);
+  else player.playedCards.push(card.id);
 
   refillMarketSlot(state, card.type);
 }
 
-function finishRound(state: GameState) {
-  for (const site of Object.values(state.sites)) delete site.occupiedBy;
-  for (const player of Object.values(state.players)) {
-    player.availableWorkers = player.workers;
-    player.hasPassed = false;
-    player.discard.push(...player.playedCards);
+function cleanupPlayerForNextRound(state: GameState, playerId: PlayerId) {
+  const player = state.players[playerId];
+  player.availableWorkers = player.workers;
+  player.hasPassed = false;
+
+  if (player.playedCards.length > 0) {
+    const seed = `${state.setupSeed ?? 'default'}:round:${state.round}:cleanup:${playerId}`;
+    player.deck.push(...shuffleWithSeed(player.playedCards, seed));
     player.playedCards = [];
   }
+
+  while (player.hand.length < 5 && player.deck.length > 0) {
+    player.hand.push(player.deck.shift()!);
+  }
+}
+
+function finishRound(state: GameState) {
+  for (const site of Object.values(state.sites)) delete site.occupiedBy;
+  for (const playerId of state.playerOrder) cleanupPlayerForNextRound(state, playerId);
 
   if (state.round >= MAX_ROUNDS) {
     state.phase = 'finished';
     return;
   }
 
-  state.round += 1;
+  advanceMarketToNextRound(state);
   state.firstPlayer = rotateFirstPlayer(state);
   state.currentPlayer = state.firstPlayer;
 }
@@ -237,11 +265,8 @@ export function reduce(state: GameState, action: GameAction, context: EngineCont
       assertCurrentPlayer(next, action.playerId);
       next.players[action.playerId].hasPassed = true;
       const following = nextActivePlayer(next, action.playerId);
-      if (following) {
-        next.currentPlayer = following;
-      } else {
-        finishRound(next);
-      }
+      if (following) next.currentPlayer = following;
+      else finishRound(next);
       return next;
     }
   }
