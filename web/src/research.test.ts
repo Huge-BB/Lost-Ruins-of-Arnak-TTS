@@ -10,13 +10,25 @@ async function loadTracks(): Promise<Record<string, ResearchTrackDefinition>> {
   return JSON.parse(raw);
 }
 
-test('extracts the Bird and Snake base-game research tracks without assuming arrival values', async () => {
+test('extracts Bird, Snake, Monkey, and Lizard research tracks', async () => {
   const tracks = await loadTracks();
-  assert.deepEqual(Object.keys(tracks).sort(), ['bird', 'snake']);
+  assert.deepEqual(Object.keys(tracks).sort(), ['bird', 'lizard', 'monkey', 'snake']);
   assert.equal(tracks.bird.rows.length, 7);
   assert.equal(tracks.snake.rows.length, 7);
-  assert.equal(tracks.bird.templeArrivalPoints, undefined);
-  assert.equal(tracks.snake.templeArrivalPoints, undefined);
+  assert.equal(tracks.monkey.rows.length, 8);
+  assert.ok(tracks.lizard.rows.length >= 7);
+  for (const id of ['bird', 'snake', 'monkey', 'lizard']) {
+    assert.ok((tracks[id].bridges ?? []).length > 0, `${id} should have research bridges`);
+    assert.equal(tracks[id].templeArrivalPoints, undefined);
+  }
+});
+
+test('Monkey research scoring is preserved from start toward the temple', async () => {
+  const { monkey } = await loadTracks();
+  assert.deepEqual(
+    monkey.rows.map(row => [row.magnifyingPoints, row.journalPoints]),
+    [[1, 0], [3, 0], [4, 1], [5, 2], [5, 4], [8, 7], [9, 9], [15, 16]],
+  );
 });
 
 test('Bird research scoring is preserved from start toward the temple', async () => {
@@ -122,20 +134,22 @@ test('journalist-style rule allows journal to lead by exactly one row', async ()
   assert.throws(() => reduce(state, { type: 'ADVANCE_RESEARCH', playerId: 'p1', track: 'journal' }, context), /cannot advance more than 1 row/);
 });
 
-test('START_GAME can select the Snake research board', async () => {
+test('START_GAME can select any of the four implemented research boards', async () => {
   const researchTracks = await loadTracks();
   const context: EngineContext = { cards: {}, researchTracks };
-  const state = reduce(createGame(['p1']), { type: 'START_GAME', researchBoard: 'snake' }, context);
-  assert.equal(state.research.board, 'snake');
+  for (const researchBoard of ['bird', 'snake', 'monkey', 'lizard'] as const) {
+    const state = reduce(createGame(['p1']), { type: 'START_GAME', researchBoard }, context);
+    assert.equal(state.research.board, researchBoard);
+  }
 });
 
 test('journal cannot advance beyond its top scored row through the reducer', async () => {
   const researchTracks = await loadTracks();
   const context: EngineContext = { cards: {}, researchTracks };
   let state = reduce(createGame(['p1']), { type: 'START_GAME' }, context);
-  state.research.magnifying.p1 = researchTracks.bird.rows.length - 1;
-  state.players.p1.researchMagnifying = researchTracks.bird.rows.length - 1;
-  state.research.journal.p1 = researchTracks.bird.rows.length - 1;
-  state.players.p1.researchJournal = researchTracks.bird.rows.length - 1;
+  state.research.magnifying.p1 = researchTracks.bird!.rows.length - 1;
+  state.players.p1.researchMagnifying = researchTracks.bird!.rows.length - 1;
+  state.research.journal.p1 = researchTracks.bird!.rows.length - 1;
+  state.players.p1.researchJournal = researchTracks.bird!.rows.length - 1;
   assert.throws(() => reduce(state, { type: 'ADVANCE_RESEARCH', playerId: 'p1', track: 'journal' }, context), /cannot advance farther/);
 });
