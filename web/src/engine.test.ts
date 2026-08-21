@@ -14,26 +14,15 @@ const cards: EngineContext = {
 
 test('START_GAME assigns base-game starting resources by player order', () => {
   const state = reduce(createGame(['p1', 'p2', 'p3', 'p4']), { type: 'START_GAME' });
-
-  assert.deepEqual(
-    state.playerOrder.map(id => ({
-      coin: state.players[id].resources.coin,
-      compass: state.players[id].resources.compass,
-    })),
-    [
-      { coin: 2, compass: 0 },
-      { coin: 1, compass: 1 },
-      { coin: 2, compass: 1 },
-      { coin: 1, compass: 2 },
-    ],
-  );
+  assert.deepEqual(state.playerOrder.map(id => ({ coin: state.players[id].resources.coin, compass: state.players[id].resources.compass })), [
+    { coin: 2, compass: 0 }, { coin: 1, compass: 1 }, { coin: 2, compass: 1 }, { coin: 1, compass: 2 },
+  ]);
 });
 
 test('END_TURN does not advance the round', () => {
   let state = reduce(createGame(['p1', 'p2']), { type: 'START_GAME' });
   state = reduce(state, { type: 'END_TURN', playerId: 'p1' });
   state = reduce(state, { type: 'END_TURN', playerId: 'p2' });
-
   assert.equal(state.round, 1);
   assert.equal(state.currentPlayer, 'p1');
 });
@@ -42,10 +31,8 @@ test('passed players are skipped until all players pass', () => {
   let state = reduce(createGame(['p1', 'p2', 'p3']), { type: 'START_GAME' });
   state = reduce(state, { type: 'PASS', playerId: 'p1' });
   assert.equal(state.currentPlayer, 'p2');
-
   state = reduce(state, { type: 'END_TURN', playerId: 'p2' });
   assert.equal(state.currentPlayer, 'p3');
-
   state = reduce(state, { type: 'END_TURN', playerId: 'p3' });
   assert.equal(state.currentPlayer, 'p2');
 });
@@ -56,7 +43,6 @@ test('all players passing starts the next round and rotates first player', () =>
   state = reduce(state, { type: 'PLACE_WORKER', playerId: 'p1', siteId: 'campsite' });
   state = reduce(state, { type: 'PASS', playerId: 'p1' });
   state = reduce(state, { type: 'PASS', playerId: 'p2' });
-
   assert.equal(state.round, 2);
   assert.equal(state.firstPlayer, 'p2');
   assert.equal(state.currentPlayer, 'p2');
@@ -67,22 +53,14 @@ test('all players passing starts the next round and rotates first player', () =>
 
 test('the fifth round finishes the game after everyone passes', () => {
   let state = reduce(createGame(['p1']), { type: 'START_GAME' });
-
-  for (let round = 1; round <= 5; round += 1) {
-    state = reduce(state, { type: 'PASS', playerId: 'p1' });
-  }
-
+  for (let round = 1; round <= 5; round += 1) state = reduce(state, { type: 'PASS', playerId: 'p1' });
   assert.equal(state.phase, 'finished');
   assert.equal(state.round, 5);
 });
 
 test('resource spending rejects insufficient resources without mutating input state', () => {
   const state = reduce(createGame(['p1']), { type: 'START_GAME' });
-
-  assert.throws(
-    () => reduce(state, { type: 'SPEND_RESOURCE', playerId: 'p1', resource: 'compass', amount: 1 }),
-    /Insufficient compass/,
-  );
+  assert.throws(() => reduce(state, { type: 'SPEND_RESOURCE', playerId: 'p1', resource: 'compass', amount: 1 }), /Insufficient compass/);
   assert.equal(state.players.p1.resources.compass, 0);
 });
 
@@ -90,9 +68,7 @@ test('buying an item spends coins, puts it on the bottom of the deck, and refill
   let state = reduce(createGame(['p1']), { type: 'START_GAME' });
   state.market.items = ['item1'];
   state.market.itemDeck = ['item2'];
-
   state = reduce(state, { type: 'BUY_CARD', playerId: 'p1', cardId: 'item1' }, cards);
-
   assert.equal(state.players.p1.resources.coin, 0);
   assert.deepEqual(state.players.p1.deck, ['item1']);
   assert.deepEqual(state.market.items, ['item2']);
@@ -101,11 +77,10 @@ test('buying an item spends coins, puts it on the bottom of the deck, and refill
 
 test('buying an artifact spends compasses and places it in the played area', () => {
   let state = reduce(createGame(['p1', 'p2']), { type: 'START_GAME' });
+  state.players.p1.resources.compass = 1;
   state.market.artifacts = ['artifact1'];
   state.market.artifactDeck = ['artifact2'];
-
   state = reduce(state, { type: 'BUY_CARD', playerId: 'p1', cardId: 'artifact1' }, cards);
-
   assert.equal(state.players.p1.resources.compass, 0);
   assert.deepEqual(state.players.p1.playedCards, ['artifact1']);
   assert.deepEqual(state.market.artifacts, ['artifact2']);
@@ -114,15 +89,7 @@ test('buying an artifact spends compasses and places it in the played area', () 
 test('market purchase fails when the card is unavailable or unaffordable', () => {
   const state = reduce(createGame(['p1']), { type: 'START_GAME' });
   state.market.items = ['item1'];
-
-  assert.throws(
-    () => reduce(state, { type: 'BUY_CARD', playerId: 'p1', cardId: 'item2' }, cards),
-    /not available/,
-  );
-
+  assert.throws(() => reduce(state, { type: 'BUY_CARD', playerId: 'p1', cardId: 'item2' }, cards), /not available/);
   state.players.p1.resources.coin = 1;
-  assert.throws(
-    () => reduce(state, { type: 'BUY_CARD', playerId: 'p1', cardId: 'item1' }, cards),
-    /Insufficient coin/,
-  );
+  assert.throws(() => reduce(state, { type: 'BUY_CARD', playerId: 'p1', cardId: 'item1' }, cards), /Insufficient coin/);
 });
