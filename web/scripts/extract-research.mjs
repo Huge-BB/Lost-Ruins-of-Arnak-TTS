@@ -94,9 +94,10 @@ function extractTrack(name, section) {
   });
 
   // TTS lists rows temple -> start. Web data uses start -> temple.
+  // Keep rowsTopDown untouched because its original order is needed to map TTS forward edges.
   // researchLevel defaults to the scored row index, but may be overridden by manual data
   // for printed spaces that visually span or skip levels.
-  const rows = rowsTopDown.reverse().map((row, rowIndex) => ({
+  const rows = [...rowsTopDown].reverse().map((row, rowIndex) => ({
     magnifyingPoints: row.magnifyingPoints,
     journalPoints: row.journalPoints,
     grantsAssistant: row.grantsAssistant,
