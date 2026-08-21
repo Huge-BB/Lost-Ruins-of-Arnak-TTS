@@ -87,6 +87,12 @@ export interface AssistantDefinition {
   image: AssistantImage;
 }
 
+export interface ResearchNodeRewardDefinition {
+  token?: ResearchToken;
+  reward: unknown;
+  verified: boolean;
+}
+
 export interface ResearchNodeDefinition {
   id: ResearchNodeId;
   rowIndex: number;
@@ -95,6 +101,8 @@ export interface ResearchNodeDefinition {
   researchLevel: number;
   /** Printed levels visually represented by this single physical space, e.g. [4, 5]. */
   spansLevels?: number[];
+  /** Human-maintained rewards attached to arriving at this physical node. */
+  rewards?: ResearchNodeRewardDefinition[];
 }
 
 export interface ResearchBridgeDefinition {
