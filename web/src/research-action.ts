@@ -1,6 +1,7 @@
-import { assertVerifiedResearchBridge, findResearchBridge, findResearchNode } from './research-manual.ts';
+import { assertVerifiedResearchBridge, findResearchBridge, findResearchNode, researchTempleNode } from './research-manual.ts';
 import { resolveResearchNodeRewards, resolveResearchReward } from './research-rewards.ts';
 import { assertLegalResearchNodeMove, researchStartNode } from './research-topology.ts';
+import { assignTempleArrival } from './temple-arrivals.ts';
 import type {
   GameState,
   PlayerId,
@@ -33,11 +34,7 @@ export interface NodeResearchMove {
   toNodeId: ResearchNodeId;
 }
 
-export function advanceResearchByNode(
-  state: GameState,
-  track: ResearchTrackDefinition,
-  move: NodeResearchMove,
-) {
+export function advanceResearchByNode(state: GameState, track: ResearchTrackDefinition, move: NodeResearchMove) {
   if (state.phase !== 'playing') throw new Error('Game is not in progress');
   if (state.currentPlayer !== move.playerId) throw new Error(`It is not ${move.playerId}'s turn`);
   const player = state.players[move.playerId];
@@ -57,6 +54,20 @@ export function advanceResearchByNode(
 
   pay(state, move.playerId, cost);
   nodeRecord[move.playerId] = move.toNodeId;
+
+  if (move.toNodeId === researchTempleNode(track.id)) {
+    const arrival = assignTempleArrival(
+      { arrivals: state.research.templeArrivals, points: state.research.templeArrivalPoints },
+      track,
+      move.playerId,
+    );
+    state.research.templeArrivals = arrival.arrivals;
+    state.research.templeArrivalPoints = arrival.points;
+    state.research.magnifying[move.playerId] = track.rows.length;
+    player.researchMagnifying = track.rows.length;
+    resolveResearchReward(state, move.playerId, bridge.id, bridge.reward);
+    return bridge;
+  }
 
   const node = findResearchNode(track, move.toNodeId);
   state.research[move.token][move.playerId] = node.rowIndex;
