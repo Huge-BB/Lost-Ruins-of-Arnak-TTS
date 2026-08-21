@@ -1,14 +1,14 @@
 import type {
   ResearchBoardId,
   ResearchBridgeDefinition,
+  ResearchCost,
   ResearchManualData,
   ResearchNodeDefinition,
   ResearchTrackDefinition,
-  ResourceCost,
 } from './types.ts';
 
-const COST_KEYS = ['coin', 'compass', 'tablet', 'arrowhead', 'jewel'] as const;
-function validateCost(cost: ResourceCost, label: string) { for (const key of COST_KEYS) { const value=cost[key]; if (value!==undefined && (!Number.isInteger(value)||value<0)) throw new Error(`${label} has invalid ${key} cost`); } }
+const COST_KEYS = ['coin', 'compass', 'tablet', 'arrowhead', 'jewel', 'usableIdol'] as const;
+function validateCost(cost: ResearchCost, label: string) { for (const key of COST_KEYS) { const value=cost[key]; if (value!==undefined && (!Number.isInteger(value)||value<0)) throw new Error(`${label} has invalid ${key} cost`); } }
 function bridgeKey(from:string,to:string){return `${from}->${to}`;}
 function allNodes(track:ResearchTrackDefinition):ResearchNodeDefinition[]{return track.rows.flatMap(row=>row.nodes??[]);}
 export const researchTempleNode=(boardId:string)=>`${boardId}:temple`;
