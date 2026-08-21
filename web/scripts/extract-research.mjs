@@ -94,18 +94,21 @@ function extractTrack(name, section) {
   });
 
   // TTS lists rows temple -> start. Web data uses start -> temple.
+  // researchLevel defaults to the scored row index, but may be overridden by manual data
+  // for printed spaces that visually span or skip levels.
   const rows = rowsTopDown.reverse().map((row, rowIndex) => ({
     magnifyingPoints: row.magnifyingPoints,
     journalPoints: row.journalPoints,
     grantsAssistant: row.grantsAssistant,
     nodes: Array.from({ length: row.pathCount }, (_, pathIndex) => ({
       id: nodeId(boardId, rowIndex, pathIndex),
+      rowIndex,
       pathIndex,
+      researchLevel: rowIndex,
     })),
   }));
 
   // forward indexes in TTS point from a row toward the next row closer to the temple.
-  // Because we reversed the row order, use each source row's original forward data.
   const bridges = [];
   for (let rowIndex = 0; rowIndex < rows.length - 1; rowIndex += 1) {
     const originalSource = rowsTopDown[rowsTopDown.length - 1 - rowIndex];
@@ -142,12 +145,14 @@ const result = {
 };
 
 const checklist = {
-  $schemaVersion: 1,
+  $schemaVersion: 2,
   notes: [
     'Generated from ResearchTrackData.ttslua. Do not edit topology here by hand.',
-    'Copy verified costs/rewards into research-manual-data.json (or start from the template).',
+    'Copy verified costs/rewards and any irregular node-level overrides into research-manual-data.json.',
+    'researchLevel defaults to rowIndex. Override only when one printed space spans/skips logical levels.',
   ],
   boards: Object.fromEntries(Object.entries(result).map(([boardId, track]) => [boardId, {
+    nodes: track.rows.flatMap(row => row.nodes).map(node => ({ ...node, verified: false })),
     bridges: track.bridges.map(bridge => ({
       ...bridge,
       cost: { coin: 0, compass: 0, tablet: 0, arrowhead: 0, jewel: 0 },
