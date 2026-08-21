@@ -1,5 +1,59 @@
 {
   "$schemaVersion": 3,
+  "$help": {
+    "cost": {
+      "resources": {
+        "coin": "金币",
+        "compass": "罗盘",
+        "tablet": "石板",
+        "arrowhead": "箭头",
+        "jewel": "宝石",
+        "usableIdol": "1 = 支付一个仍可用、未放入 idol slot 的神像"
+      },
+      "travel": {
+        "boot": "步行",
+        "car": "汽车",
+        "boat": "船",
+        "plane": "飞机"
+      },
+      "examples": [
+        { "coin": 1, "tablet": 2 },
+        { "usableIdol": 1 },
+        { "travel": { "boat": 1 } },
+        { "travel": { "car": 1, "boot": 1 } }
+      ]
+    },
+    "bridgeFields": {
+      "allowedTokens": "可选：['magnifying'] 表示仅放大镜可走；['journal'] 表示仅书可走；省略表示两者均可走",
+      "rewards": "跨过这条 bridge 时获得的奖励数组；没有就 []",
+      "verified": "人工核对版图后设为 true"
+    },
+    "nodeRewardFields": {
+      "node": "目标节点 ID，例如 monkey:r3:p0",
+      "token": "可选：magnifying=仅放大镜触发，journal=仅书触发；省略表示两者都触发",
+      "rewards": "同一格可以有多个奖励",
+      "verified": "人工核对版图后设为 true"
+    },
+    "rewardTypes": {
+      "GAIN_RESOURCE": { "shape": { "type": "GAIN_RESOURCE", "resource": "coin|compass|tablet|arrowhead|jewel", "amount": 1 }, "meaning": "获得资源" },
+      "DRAW_CARD": { "shape": { "type": "DRAW_CARD", "amount": 1 }, "meaning": "抽牌" },
+      "GAIN_FEAR_CARD": { "shape": { "type": "GAIN_FEAR_CARD", "amount": 1 }, "meaning": "获得恐惧牌" },
+      "CLAIM_ASSISTANT": { "shape": { "type": "CLAIM_ASSISTANT", "level": "silver" }, "meaning": "获得银助手" },
+      "UPGRADE_ASSISTANT": { "shape": { "type": "UPGRADE_ASSISTANT", "level": "gold" }, "meaning": "将已有助手升级为金面" },
+      "REFRESH_ASSISTANTS": { "shape": { "type": "REFRESH_ASSISTANTS", "amount": "all" }, "meaning": "重置助手；双助手全部重置用 all" },
+      "ACQUIRE_ARTIFACT_FREE": { "shape": { "type": "ACQUIRE_ARTIFACT_FREE" }, "meaning": "免费获得市场中的神器" },
+      "ACTIVATE_DISCOVERED_LEVEL1_SITE": { "shape": { "type": "ACTIVATE_DISCOVERED_LEVEL1_SITE" }, "meaning": "触发一个已经探开的一级地点" },
+      "ACTIVATE_VISIBLE_SILVER_ASSISTANT_THEN_BOTTOM": { "shape": { "type": "ACTIVATE_VISIBLE_SILVER_ASSISTANT_THEN_BOTTOM" }, "meaning": "触发供应堆顶可见银助手，然后将其放到该堆底部" },
+      "BONUS_TILE": { "shape": { "type": "BONUS_TILE" }, "meaning": "研究轨随机 bonus tile；位置通常由 TTS 自动提取，无需手录具体奖励" },
+      "CHOOSE": { "shape": { "type": "CHOOSE", "count": 1, "options": [{ "type": "CLAIM_ASSISTANT", "level": "silver" }, { "type": "UPGRADE_ASSISTANT", "level": "gold" }] }, "meaning": "从 options 中选择 count 个" },
+      "SEQUENCE": { "shape": { "type": "SEQUENCE", "rewards": [{ "type": "GAIN_RESOURCE", "resource": "coin", "amount": 1 }, { "type": "DRAW_CARD", "amount": 1 }] }, "meaning": "按顺序执行多个效果；普通同时获得多个奖励也可以直接在外层 rewards 数组写多个项" },
+      "TEMPLE_SPECIAL": { "shape": { "type": "TEMPLE_SPECIAL", "code": "SPECIAL_CODE", "data": {} }, "meaning": "已经确认但尚未建立专用 reward 类型的神庙特殊效果；优先使用上面的明确类型" }
+    },
+    "knownTempleSpecials": {
+      "monkey": ["路线可用 allowedTokens 限定放大镜/书", "交通费用写入 cost.travel", "轨道神器、供应助手等特殊机制由 Monkey rules plugin 处理"],
+      "lizard": ["轨道怪物阻挡与击败由 Lizard rules plugin 处理", "触发并烧毁一级地点及其守护者属于 Lizard 专属动作，不要自行发明 reward type；需要录到具体格时先用 TEMPLE_SPECIAL 标明语义"]
+    }
+  },
   "boards": {
     "bird": {
       "bridges": [
