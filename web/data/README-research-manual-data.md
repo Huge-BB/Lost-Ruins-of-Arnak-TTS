@@ -7,6 +7,7 @@ Run:
 ```bash
 cd web
 npm run extract:data
+npm run validate:research
 ```
 
 This generates:
@@ -14,7 +15,9 @@ This generates:
 - `src/generated/research-tracks.json` — machine-generated topology used by the engine.
 - `data/research-bridges.generated.json` — a human-readable checklist of every research bridge.
 
-Do **not** manually edit generated topology. Start from `data/research-manual-data.template.json` and create/update `data/research-manual-data.json` with only the costs/rewards you have verified from the board or rulebook.
+Edit only `data/research-manual-data.json`. The validator checks every manually entered bridge/node against the generated topology and prints progress as `verified / total bridges`.
+
+Do **not** manually edit generated topology. Copy IDs from `data/research-bridges.generated.json` into `data/research-manual-data.json` and fill only costs/rewards you have verified from the board or rulebook.
 
 ## Bridge entry
 
@@ -44,6 +47,20 @@ Supported cost resource keys:
 - `tablet`
 - `arrowhead`
 - `jewel`
+
+## Irregular node entry
+
+Use `nodeOverrides` only when the printed board has a physical research space whose logical height differs from the default row index, such as one space spanning two printed levels.
+
+```json
+{
+  "node": "bird:r4:p1",
+  "researchLevel": 5,
+  "spansLevels": [4, 5],
+  "verified": true,
+  "comment": "One printed space spans levels 4 and 5"
+}
+```
 
 ## Node reward entry
 
@@ -79,4 +96,4 @@ A bridge ID is simply `from->to`, for example:
 bird:r2:p0->bird:r3:p1
 ```
 
-When entering data, copy IDs exactly from `research-bridges.generated.json`; do not renumber paths manually.
+Copy IDs exactly from `research-bridges.generated.json`; do not renumber paths manually.
