@@ -37,7 +37,6 @@ const track: ResearchTrackDefinition = {
     reward: { type: 'GAIN_RESOURCE', resource: 'compass', amount: 1 },
     verified: true,
   }],
-  templePoints: [23, 21, 20, 19],
 };
 
 test('verified bridge and matching node resource rewards resolve immediately', () => {
@@ -48,12 +47,13 @@ test('verified bridge and matching node resource rewards resolve immediately', (
   assert.equal(game.pendingRewards.length, 0);
 });
 
-test('token-specific node reward is not granted to the other research token', () => {
+test('assistant research reward is exposed as a structured pending choice', () => {
   const game = state();
   game.players.p1.rules.journalMaxLead = 1;
   advanceResearchByNode(game, track, { playerId: 'p1', token: 'journal', toNodeId: 'bird:r0:p0' });
   assert.equal(game.players.p1.resources.coin, 0);
   assert.equal(game.players.p1.resources.compass, 1);
   assert.equal(game.pendingRewards.length, 1);
-  assert.match(game.pendingRewards[0].code, /CLAIM_ASSISTANT/);
+  assert.equal(game.pendingRewards[0].code, 'research:CLAIM_ASSISTANT');
+  assert.deepEqual(game.pendingRewards[0].payload, { type: 'CLAIM_ASSISTANT', level: 'silver' });
 });
