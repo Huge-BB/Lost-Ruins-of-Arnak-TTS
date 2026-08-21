@@ -1,6 +1,8 @@
 import { prepareAssistantSupply } from './assistants.ts';
 import { prepareBaseGameSetup } from './cards.ts';
 import { applyCardEffects, getCardEffects } from './effects.ts';
+import { advanceResearchByNode } from './research-action.ts';
+import { researchStartNode } from './research-topology.ts';
 import { nextLegalResearchPosition, RESEARCH_START_POSITION } from './research.ts';
 import { shuffleWithSeed } from './rng.ts';
 import { addGuardianFear, resolveRewardCode } from './site-rewards.ts';
@@ -36,6 +38,7 @@ export function createGame(playerIds: PlayerId[]): GameState {
     researchJournal: RESEARCH_START_POSITION,
     deck: [], hand: [], discard: [], playedCards: [], idols: [], assistants: [], defeatedGuardians: [],
   }]));
+  const startNode = researchStartNode('bird');
   return {
     version: 1, phase: 'setup', round: 1,
     firstPlayer: playerIds[0], currentPlayer: playerIds[0],
@@ -47,6 +50,10 @@ export function createGame(playerIds: PlayerId[]): GameState {
       board: 'bird',
       magnifying: Object.fromEntries(playerIds.map(id => [id, RESEARCH_START_POSITION])),
       journal: Object.fromEntries(playerIds.map(id => [id, RESEARCH_START_POSITION])),
+      magnifyingNode: Object.fromEntries(playerIds.map(id => [id, startNode])),
+      journalNode: Object.fromEntries(playerIds.map(id => [id, startNode])),
+      templeArrivals: [],
+      templeArrivalPoints: {},
     },
     pendingRewards: [],
   };
@@ -210,9 +217,19 @@ function advanceResearch(state: GameState, action: Extract<GameAction, { type: '
   const player = assertPlayer(state, action.playerId);
   const definition = context.researchTracks?.[state.research.board];
   if (!definition) throw new Error(`Research track data required for ${state.research.board}`);
+
+  if (action.toNodeId) {
+    advanceResearchByNode(state, definition, {
+      playerId: action.playerId,
+      token: action.track,
+      toNodeId: action.toNodeId,
+    });
+    return;
+  }
+
+  // Temporary compatibility path for older tests/actions while manual bridge costs are being recorded.
   const amount = action.amount ?? 1;
   if (!Number.isInteger(amount) || amount < 1) throw new Error('Research amount must be positive');
-
   let position = state.research[action.track][action.playerId];
   let magnifying = state.research.magnifying[action.playerId];
   let journal = state.research.journal[action.playerId];
@@ -269,6 +286,9 @@ export function reduce(state: GameState, action: GameAction, context: EngineCont
       const seed = action.seed ?? 'default';
       next.setupSeed = seed;
       next.research.board = action.researchBoard ?? 'bird';
+      const startNode = researchStartNode(next.research.board);
+      next.research.magnifyingNode = Object.fromEntries(next.playerOrder.map(id => [id, startNode]));
+      next.research.journalNode = Object.fromEntries(next.playerOrder.map(id => [id, startNode]));
       setupDiscoveryDecks(next, context, seed);
       if (context.assistants && Object.keys(context.assistants).length > 0) {
         next.assistants = prepareAssistantSupply(context.assistants, next.research.board, next.playerOrder.length, seed);
