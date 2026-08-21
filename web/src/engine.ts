@@ -1,6 +1,7 @@
+import { prepareAssistantSupply } from './assistants.ts';
 import { prepareBaseGameSetup } from './cards.ts';
 import { applyCardEffects, getCardEffects } from './effects.ts';
-import { nextResearchPosition, RESEARCH_START_POSITION } from './research.ts';
+import { nextLegalResearchPosition, RESEARCH_START_POSITION } from './research.ts';
 import { shuffleWithSeed } from './rng.ts';
 import { addGuardianFear, resolveRewardCode } from './site-rewards.ts';
 import { canPayTravel, hasTravelCost } from './travel.ts';
@@ -26,19 +27,21 @@ export function createGame(playerIds: PlayerId[]): GameState {
     id,
     name: `Player ${index + 1}`,
     color: PLAYER_COLORS[index],
+    rules: { journalMaxLead: 0 },
     resources: emptyResources(),
     workers: 2,
     availableWorkers: 2,
     hasPassed: false,
     researchMagnifying: RESEARCH_START_POSITION,
     researchJournal: RESEARCH_START_POSITION,
-    deck: [], hand: [], discard: [], playedCards: [], idols: [],
+    deck: [], hand: [], discard: [], playedCards: [], idols: [], assistants: [], defeatedGuardians: [],
   }]));
   return {
     version: 1, phase: 'setup', round: 1,
     firstPlayer: playerIds[0], currentPlayer: playerIds[0],
     players, playerOrder: [...playerIds], sites: {},
     discovery: { level1Deck: [], level2Deck: [], guardianDeck: [], idolDeck: [] },
+    assistants: { stacks: [], specialStack: [] },
     market: { items: [], artifacts: [], itemDeck: [], artifactDeck: [], exiled: [] },
     research: {
       board: 'bird',
@@ -211,8 +214,19 @@ function advanceResearch(state: GameState, action: Extract<GameAction, { type: '
   if (!Number.isInteger(amount) || amount < 1) throw new Error('Research amount must be positive');
 
   let position = state.research[action.track][action.playerId];
+  let magnifying = state.research.magnifying[action.playerId];
+  let journal = state.research.journal[action.playerId];
   for (let step = 0; step < amount; step += 1) {
-    position = nextResearchPosition(definition, action.track, position);
+    position = nextLegalResearchPosition(
+      definition,
+      action.track,
+      position,
+      magnifying,
+      journal,
+      player.rules.journalMaxLead,
+    );
+    if (action.track === 'magnifying') magnifying = position;
+    else journal = position;
   }
   state.research[action.track][action.playerId] = position;
   if (action.track === 'magnifying') player.researchMagnifying = position;
@@ -256,6 +270,9 @@ export function reduce(state: GameState, action: GameAction, context: EngineCont
       next.setupSeed = seed;
       next.research.board = action.researchBoard ?? 'bird';
       setupDiscoveryDecks(next, context, seed);
+      if (context.assistants && Object.keys(context.assistants).length > 0) {
+        next.assistants = prepareAssistantSupply(context.assistants, next.research.board, next.playerOrder.length, seed);
+      }
       if (Object.keys(context.cards).length > 0) {
         const setup = prepareBaseGameSetup(context, next.playerOrder.length, seed);
         next.market = setup.market;
