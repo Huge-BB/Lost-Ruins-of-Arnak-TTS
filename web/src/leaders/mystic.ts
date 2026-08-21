@@ -12,4 +12,8 @@ export const mysticLeader: LeaderRules = {
       idolSlotCount: 5,
     });
   },
+  onRoundStart({ state, playerId, context }) {
+    const fear = Object.values(context.cards).find(card => card.type === 'Fear' && card.expansion === 'Base Game');
+    if (fear) state.players[playerId].hand.push(fear.id);
+  },
 };
