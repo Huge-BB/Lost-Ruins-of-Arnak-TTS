@@ -1,4 +1,4 @@
-import { reduce } from './engine.ts';
+import { reduceWithActionWindow } from './engine-with-action-window.ts';
 import { reduceExpeditionLeaderAction, type ExpeditionLeaderAction } from './leaders/reducer.ts';
 import type { EngineContext, GameAction, GameState } from './types.ts';
 
@@ -23,7 +23,7 @@ function contextWithoutIdolReward(context:EngineContext,idolId:string):EngineCon
 /** Canonical reducer facade when Expedition Leaders are enabled. */
 export function reduceWithLeaders(state:GameState,action:LeaderAwareGameAction,context:EngineContext):GameState{
   if(action.type.startsWith('LEADER_'))return reduceExpeditionLeaderAction(state,action as ExpeditionLeaderAction,context);
-  if(action.type!=='DISCOVER_SITE')return reduce(state,action as GameAction,context);
+  if(action.type!=='DISCOVER_SITE')return reduceWithActionWindow(state,action as GameAction,context);
 
   const next=structuredClone(state),player=next.players[action.playerId],leader=player?.leader;
   if(!player)throw new Error(`Unknown player: ${action.playerId}`);
@@ -51,11 +51,11 @@ export function reduceWithLeaders(state:GameState,action:LeaderAwareGameAction,c
     leader.data.blindsightIdolExileThisTurn=false;
     if(action.useBlindsight){
       const idolId=next.discovery.idolDeck[0]; if(!idolId)throw new Error('Blindsight requires a face-up idol from discovery');
-      const resolved=reduce(next,action as DiscoverAction,contextWithoutIdolReward(context,idolId));
+      const resolved=reduceWithActionWindow(next,action as DiscoverAction,contextWithoutIdolReward(context,idolId));
       resolved.pendingRewards.push({playerId:action.playerId,sourceId:'leader:mystic:Blindsight',code:'leader:EXILE_OWN_CARD',payload:{max:1,freeAction:true,replacesIdolEffect:true}});
       return resolved;
     }
   }
 
-  return reduce(next,action as DiscoverAction,context);
+  return reduceWithActionWindow(next,action as DiscoverAction,context);
 }
