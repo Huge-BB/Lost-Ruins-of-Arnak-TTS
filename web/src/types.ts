@@ -7,6 +7,7 @@ export type TravelIcon = 'boot' | 'car' | 'boat' | 'plane';
 export type TravelCost = Partial<Record<TravelIcon, number>>;
 export type ResearchBoardId = 'bird' | 'snake';
 export type ResearchToken = 'magnifying' | 'journal';
+export type AssistantLevel = 'silver' | 'gold';
 
 export interface Resources {
   tablet: number;
@@ -27,6 +28,15 @@ export interface SpriteImage {
   sheetWidth?: number;
   sheetHeight?: number;
   cardIndex?: number;
+}
+
+export interface AssistantImage {
+  silverUrl: string;
+  goldUrl: string;
+  sheetWidth: number;
+  sheetHeight: number;
+  cardIndex: number;
+  uniqueBack: boolean;
 }
 
 export interface CardDefinition {
@@ -62,6 +72,12 @@ export interface GuardianDefinition {
   image?: SpriteImage;
 }
 
+export interface AssistantDefinition {
+  id: string;
+  expansion: string;
+  image: AssistantImage;
+}
+
 export interface ResearchRowDefinition {
   magnifyingPoints: number;
   journalPoints: number;
@@ -86,6 +102,12 @@ export interface PlayerIdol {
   faceUp: boolean;
 }
 
+export interface PlayerAssistant {
+  id: string;
+  level: AssistantLevel;
+  exhausted: boolean;
+}
+
 export interface PlayerState {
   id: PlayerId;
   name: string;
@@ -101,6 +123,7 @@ export interface PlayerState {
   discard: CardId[];
   playedCards: CardId[];
   idols: PlayerIdol[];
+  assistants: PlayerAssistant[];
 }
 
 export interface SiteState {
@@ -118,6 +141,11 @@ export interface DiscoveryState {
   level2Deck: string[];
   guardianDeck: string[];
   idolDeck: string[];
+}
+
+export interface AssistantSupplyState {
+  stacks: string[][];
+  specialStack: string[];
 }
 
 export interface MarketState {
@@ -145,6 +173,7 @@ export interface GameState {
   playerOrder: PlayerId[];
   sites: Record<string, SiteState>;
   discovery: DiscoveryState;
+  assistants: AssistantSupplyState;
   market: MarketState;
   research: ResearchState;
   pendingRewards: PendingReward[];
@@ -156,6 +185,7 @@ export interface EngineContext {
   sites?: Record<string, SiteDefinition>;
   idols?: Record<string, IdolDefinition>;
   guardians?: Record<string, GuardianDefinition>;
+  assistants?: Record<string, AssistantDefinition>;
   researchTracks?: Partial<Record<ResearchBoardId, ResearchTrackDefinition>>;
 }
 
