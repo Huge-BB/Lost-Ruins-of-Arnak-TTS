@@ -1,4 +1,4 @@
-import type { CardDefinition, CardId, EngineContext } from './types.ts';
+import type { CardDefinition, CardId, EngineContext, MarketState } from './types.ts';
 
 export interface BaseGameCardPools {
   items: CardId[];
@@ -53,6 +53,22 @@ export function validateBaseGameCardPools(pools: BaseGameCardPools) {
       throw new Error(`Expected 4 base-game starter cards for ${color}, found ${starters.length}`);
     }
   }
+}
+
+export function dealMarketForRound(round: number, itemDeck: CardId[], artifactDeck: CardId[]): MarketState {
+  if (!Number.isInteger(round) || round < 1 || round > 5) throw new Error('Round must be between 1 and 5');
+
+  const remainingItems = [...itemDeck];
+  const remainingArtifacts = [...artifactDeck];
+  const artifactCount = round;
+  const itemCount = 6 - round;
+
+  return {
+    artifacts: remainingArtifacts.splice(0, artifactCount),
+    items: remainingItems.splice(0, itemCount),
+    artifactDeck: remainingArtifacts,
+    itemDeck: remainingItems,
+  };
 }
 
 export function cardRecord(cards: CardDefinition[]): EngineContext['cards'] {
