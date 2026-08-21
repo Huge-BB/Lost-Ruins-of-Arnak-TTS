@@ -1,5 +1,5 @@
 import { shuffleWithSeed } from './rng.ts';
-import type { AssistantDefinition, AssistantSupplyState, ResearchBoardId } from './types.ts';
+import type { AssistantDefinition, AssistantSupplyState, PlayerAssistant, ResearchBoardId } from './types.ts';
 
 export function buildBaseAssistantPool(assistants: Record<string, AssistantDefinition>): string[] {
   const ids = Object.values(assistants)
@@ -45,4 +45,34 @@ export function prepareAssistantSupply(
 
 export function availableAssistantIds(supply: AssistantSupplyState): string[] {
   return supply.stacks.flatMap(stack => stack.length > 0 ? [stack[0]] : []);
+}
+
+export function claimAssistantFromStack(
+  supply: AssistantSupplyState,
+  stackIndex: number,
+): { supply: AssistantSupplyState; assistant: PlayerAssistant } {
+  if (!Number.isInteger(stackIndex) || stackIndex < 0 || stackIndex >= supply.stacks.length) {
+    throw new Error(`Invalid assistant stack: ${stackIndex}`);
+  }
+  const next = structuredClone(supply);
+  const assistantId = next.stacks[stackIndex].shift();
+  if (!assistantId) throw new Error(`Assistant stack ${stackIndex} is empty`);
+  return {
+    supply: next,
+    assistant: { id: assistantId, level: 'silver', exhausted: false },
+  };
+}
+
+export function upgradeAssistant(assistant: PlayerAssistant): PlayerAssistant {
+  if (assistant.level === 'gold') throw new Error('Assistant is already gold');
+  return { ...assistant, level: 'gold' };
+}
+
+export function exhaustAssistant(assistant: PlayerAssistant): PlayerAssistant {
+  if (assistant.exhausted) throw new Error('Assistant is already exhausted');
+  return { ...assistant, exhausted: true };
+}
+
+export function refreshAssistant(assistant: PlayerAssistant): PlayerAssistant {
+  return { ...assistant, exhausted: false };
 }
