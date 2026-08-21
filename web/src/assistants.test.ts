@@ -1,19 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
-
-type AssistantDefinition = {
-  id: string;
-  expansion: string;
-  image: {
-    silverUrl: string;
-    goldUrl: string;
-    sheetWidth: number;
-    sheetHeight: number;
-    cardIndex: number;
-    uniqueBack: boolean;
-  };
-};
+import { availableAssistantIds, prepareAssistantSupply } from './assistants.ts';
+import type { AssistantDefinition } from './types.ts';
 
 async function loadAssistants(): Promise<Record<string, AssistantDefinition>> {
   const raw = await readFile(new URL('./generated/assistants.json', import.meta.url), 'utf8');
@@ -39,4 +28,25 @@ test('known base assistant GUID keeps its TTS sprite identity', async () => {
   assert.equal(assistants['224d5d']?.image.cardIndex, 9);
   assert.equal(assistants['224d5d']?.image.sheetWidth, 4);
   assert.equal(assistants['224d5d']?.image.sheetHeight, 3);
+});
+
+test('Bird board creates three deterministic stacks of four assistants', async () => {
+  const assistants = await loadAssistants();
+  const first = prepareAssistantSupply(assistants, 'bird', 4, 'assistant-seed');
+  const second = prepareAssistantSupply(assistants, 'bird', 4, 'assistant-seed');
+
+  assert.deepEqual(first, second);
+  assert.deepEqual(first.stacks.map(stack => stack.length), [4, 4, 4]);
+  assert.deepEqual(first.specialStack, []);
+  assert.equal(new Set(first.stacks.flat()).size, 12);
+  assert.equal(availableAssistantIds(first).length, 3);
+});
+
+test('Snake board separates one special assistant per player before normal supply is finalized', async () => {
+  const assistants = await loadAssistants();
+  const supply = prepareAssistantSupply(assistants, 'snake', 3, 'snake-assistant-seed');
+
+  assert.equal(supply.specialStack.length, 3);
+  assert.deepEqual(supply.stacks, []);
+  assert.equal(new Set(supply.specialStack).size, 3);
 });
