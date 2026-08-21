@@ -20,6 +20,13 @@ function removeOwnedCard(state:GameState,playerId:PlayerId,cardId:CardId){
   for(const zone of [p.hand,p.playedCards,p.discard,p.deck]){const i=zone.indexOf(cardId);if(i>=0){zone.splice(i,1);next.market.exiled.push(cardId);return next;}}
   throw new Error('Card is not owned by the player');
 }
+function addCaptainHiddenFearBonus(state:GameState,playerId:PlayerId,context:EngineContext,cardId:CardId){
+  const player=state.players[playerId],card=context.cards[cardId];
+  if(player.leader?.id!=='captain'||card?.name!=='Hidden Fear')return;
+  const fear=Object.values(context.cards).find(candidate=>candidate.type==='Fear'&&candidate.expansion==='Base Game');
+  if(fear)player.playedCards.push(fear.id);
+  player.resources.compass+=1;
+}
 
 /** Resolve pending rewards emitted by Expedition Leaders cards and leader boards. */
 export function resolveLeaderPendingChoice(state:GameState,playerId:PlayerId,pendingIndex:number,choice:LeaderPendingChoice,context:EngineContext):GameState{
@@ -37,7 +44,7 @@ export function resolveLeaderPendingChoice(state:GameState,playerId:PlayerId,pen
     case 'leader:EXILE_OWN_CARD': {
       if(choice.type!=='card')throw new Error('Exile effect requires a card choice'); const card=context.cards[choice.cardId];
       let resolved:GameState;
-      if(state.players[playerId].leader?.id==='mystic'&&card?.type==='Fear')resolved=mysticExileFear(state,playerId,choice.cardId,context); else resolved=removeOwnedCard(state,playerId,choice.cardId);
+      if(state.players[playerId].leader?.id==='mystic'&&card?.type==='Fear')resolved=mysticExileFear(state,playerId,choice.cardId,context); else {resolved=removeOwnedCard(state,playerId,choice.cardId);addCaptainHiddenFearBonus(resolved,playerId,context,choice.cardId);}
       return removePending(resolved,pendingIndex);
     }
     case 'leader:OPTIONAL_EXILE_FAR_LEFT_ITEM': {
