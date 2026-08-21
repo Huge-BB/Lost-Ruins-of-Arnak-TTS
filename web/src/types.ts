@@ -2,12 +2,16 @@ export type PlayerId = string;
 export type CardId = string;
 export type PlayerColor = 'Yellow' | 'Green' | 'Blue' | 'Red';
 export type Resource = 'tablet' | 'arrowhead' | 'jewel' | 'coin' | 'compass' | 'fear';
+export type SpendableResource = Exclude<Resource, 'fear'>;
+export type ResourceCost = Partial<Record<SpendableResource, number>>;
 export type CardType = 'Item' | 'Artifact' | 'Fear' | 'Starter' | 'Other';
 export type TravelIcon = 'boot' | 'car' | 'boat' | 'plane';
 export type TravelCost = Partial<Record<TravelIcon, number>>;
 export type ResearchBoardId = 'bird' | 'snake';
 export type ResearchToken = 'magnifying' | 'journal';
 export type AssistantLevel = 'silver' | 'gold';
+export type ResearchNodeId = string;
+export type ResearchBridgeId = string;
 
 export interface Resources {
   tablet: number;
@@ -83,17 +87,62 @@ export interface AssistantDefinition {
   image: AssistantImage;
 }
 
+export interface ResearchNodeDefinition {
+  id: ResearchNodeId;
+  pathIndex: number;
+}
+
+export interface ResearchBridgeDefinition {
+  id: ResearchBridgeId;
+  from: ResearchNodeId;
+  to: ResearchNodeId;
+  /** Filled by the human-maintained research data overlay. */
+  cost?: ResourceCost;
+  /** Declarative reward data; interpreted by the research reward registry. */
+  reward?: unknown;
+  verified?: boolean;
+}
+
 export interface ResearchRowDefinition {
   magnifyingPoints: number;
   journalPoints: number;
   grantsAssistant: boolean;
+  nodes?: ResearchNodeDefinition[];
 }
 
 export interface ResearchTrackDefinition {
   id: ResearchBoardId;
   name: string;
   rows: ResearchRowDefinition[];
+  bridges?: ResearchBridgeDefinition[];
   templePoints: number[];
+}
+
+export interface ResearchManualNodeReward {
+  node: ResearchNodeId;
+  token?: ResearchToken;
+  reward: unknown;
+  verified: boolean;
+  comment?: string;
+}
+
+export interface ResearchManualBridge {
+  from: ResearchNodeId;
+  to: ResearchNodeId;
+  cost: ResourceCost;
+  reward?: unknown;
+  verified: boolean;
+  comment?: string;
+}
+
+export interface ResearchManualBoardData {
+  bridges: ResearchManualBridge[];
+  nodeRewards: ResearchManualNodeReward[];
+}
+
+export interface ResearchManualData {
+  $schemaVersion: 1;
+  boards: Partial<Record<ResearchBoardId, ResearchManualBoardData>>;
 }
 
 export interface PendingReward {
