@@ -19,8 +19,12 @@ export interface PlayerRules { journalMaxLead:number; }
 export type CardEffect = { type:'GAIN_RESOURCE'; resource:Resource; amount:number } | { type:'DRAW_CARD'; amount:number };
 export type ResearchReward =
  | { type:'GAIN_RESOURCE'; resource:Resource; amount:number }
+ | { type:'DRAW_CARD'; amount:number }
  | { type:'CLAIM_ASSISTANT'; level:'silver' }
  | { type:'UPGRADE_ASSISTANT'; level:'gold' }
+ | { type:'BONUS_TILE' }
+ | { type:'SEQUENCE'; rewards:ResearchReward[] }
+ | { type:'CHOOSE'; count:number; options:ResearchReward[] }
  | { type:string; [key:string]:unknown };
 export interface SpriteImage { faceUrl:string; backUrl?:string; sheetWidth?:number; sheetHeight?:number; cardIndex?:number; }
 export interface AssistantImage { silverUrl:string; goldUrl:string; sheetWidth:number; sheetHeight:number; cardIndex:number; uniqueBack:boolean; }
@@ -29,16 +33,16 @@ export interface SiteDefinition { id:string; level:1|2; rewardCode:string; expan
 export interface IdolDefinition { id:string; rewardCode:string; expansion:string; image?:SpriteImage; }
 export interface GuardianDefinition { id:string; expansion:string; image?:SpriteImage; }
 export interface AssistantDefinition { id:string; expansion:string; image:AssistantImage; }
-export interface ResearchNodeRewardDefinition { token?:ResearchToken; reward:ResearchReward; verified:boolean; }
-export interface ResearchNodeDefinition { id:ResearchNodeId; rowIndex:number; pathIndex:number; researchLevel:number; spansLevels?:number[]; rewards?:ResearchNodeRewardDefinition[]; }
-export interface ResearchBridgeDefinition { id:ResearchBridgeId; from:ResearchNodeId; to:ResearchNodeId; cost?:ResearchCost; reward?:ResearchReward; verified?:boolean; }
+export interface ResearchNodeRewardDefinition { token?:ResearchToken; rewards:ResearchReward[]; verified:boolean; }
+export interface ResearchNodeDefinition { id:ResearchNodeId; rowIndex:number; pathIndex:number; researchLevel:number; spansLevels?:number[]; rewards?:ResearchNodeRewardDefinition[]; bonusSlot?:boolean; }
+export interface ResearchBridgeDefinition { id:ResearchBridgeId; from:ResearchNodeId; to:ResearchNodeId; cost?:ResearchCost; rewards?:ResearchReward[]; verified?:boolean; }
 export interface ResearchRowDefinition { magnifyingPoints:number; journalPoints:number; grantsAssistant:boolean; nodes?:ResearchNodeDefinition[]; }
 export interface ResearchTrackDefinition { id:ResearchBoardId; name:string; rows:ResearchRowDefinition[]; bridges?:ResearchBridgeDefinition[]; templeArrivalPoints?: [number, number, number, number]; }
 export interface ResearchManualNodeOverride { node:ResearchNodeId; researchLevel?:number; spansLevels?:number[]; verified:boolean; comment?:string; }
-export interface ResearchManualNodeReward { node:ResearchNodeId; token?:ResearchToken; reward:ResearchReward; verified:boolean; comment?:string; }
-export interface ResearchManualBridge { from:ResearchNodeId; to:ResearchNodeId; cost:ResearchCost; reward?:ResearchReward; verified:boolean; comment?:string; }
+export interface ResearchManualNodeReward { node:ResearchNodeId; token?:ResearchToken; rewards:ResearchReward[]; verified:boolean; comment?:string; }
+export interface ResearchManualBridge { from:ResearchNodeId; to:ResearchNodeId; cost:ResearchCost; rewards?:ResearchReward[]; verified:boolean; comment?:string; }
 export interface ResearchManualBoardData { bridges:ResearchManualBridge[]; nodeOverrides?:ResearchManualNodeOverride[]; nodeRewards:ResearchManualNodeReward[]; templeArrivalPoints?: [number, number, number, number]; }
-export interface ResearchManualData { $schemaVersion:1|2; boards:Partial<Record<ResearchBoardId, ResearchManualBoardData>>; }
+export interface ResearchManualData { $schemaVersion:1|2|3; boards:Partial<Record<ResearchBoardId,ResearchManualBoardData>>; }
 export interface PendingReward { playerId:PlayerId; sourceId:string; code:string; payload?:unknown; }
 export interface PlayerIdol { id:string; faceUp:boolean; inSlot?:boolean; }
 export interface PlayerAssistant { id:string; level:AssistantLevel; exhausted:boolean; }
