@@ -46,9 +46,11 @@ export interface ResearchRowDefinition { magnifyingPoints:number; journalPoints:
 export interface ResearchTrackDefinition { id:ResearchBoardId; name:string; rows:ResearchRowDefinition[]; bridges?:ResearchBridgeDefinition[]; templeArrivalPoints?: [number, number, number, number]; metadata?:Record<string,unknown>; }
 export interface ResearchManualNodeOverride { node:ResearchNodeId; researchLevel?:number; spansLevels?:number[]; verified:boolean; comment?:string; }
 export interface ResearchManualNodeReward { node:ResearchNodeId; token?:ResearchToken; rewards:ResearchReward[]; verified:boolean; comment?:string; }
-export interface ResearchManualBridge { from:ResearchNodeId; to:ResearchNodeId; cost:ResearchCost; rewards?:ResearchReward[]; allowedTokens?:ResearchToken[]; verified:boolean; comment?:string; }
-export interface ResearchManualBoardData { bridges:ResearchManualBridge[]; nodeOverrides?:ResearchManualNodeOverride[]; nodeRewards:ResearchManualNodeReward[]; templeArrivalPoints?: [number, number, number, number]; }
+export interface ResearchManualBridge { from:ResearchNodeId; to:ResearchNodeId; cost:ResearchCost; allowedTokens?:ResearchToken[]; verified:boolean; comment?:string; }
+export interface ResearchManualBoardData { bridges:ResearchManualBridge[]; nodeOverrides?:ResearchManualNodeOverride[]; templeArrivalPoints?: [number, number, number, number]; }
 export interface ResearchManualData { $schemaVersion:1|2|3; boards:Partial<Record<ResearchBoardId, ResearchManualBoardData>>; }
+export interface ResearchRewardsManualBoardData { nodeRewards:ResearchManualNodeReward[]; }
+export interface ResearchRewardsManualData { $schemaVersion:1; boards:Partial<Record<ResearchBoardId, ResearchRewardsManualBoardData>>; }
 export interface PendingReward { playerId:PlayerId; sourceId:string; code:string; payload?:unknown; }
 export interface PlayerIdol { id:string; faceUp:boolean; inSlot?:boolean; }
 export interface PlayerAssistant { id:string; level:AssistantLevel; exhausted:boolean; }
