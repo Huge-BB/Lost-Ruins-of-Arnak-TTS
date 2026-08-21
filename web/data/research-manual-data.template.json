@@ -1,11 +1,13 @@
 {
-  "$schemaVersion": 1,
+  "$schemaVersion": 2,
   "notes": [
     "This file is a human-maintained overlay for research data that TTS does not encode structurally.",
-    "Topology (rows, path nodes, forward edges, scores) should come from src/ResearchTrackData.ttslua.",
-    "Fill only costs/rewards that are visible on the printed board/rulebook and verify them against the physical board.",
+    "Topology (path nodes, forward edges, scores) should come from src/ResearchTrackData.ttslua.",
+    "Fill costs/rewards visible on the printed board/rulebook and verify them against the physical board.",
     "Resource keys: coin, compass, tablet, arrowhead, jewel.",
-    "Reward codes should remain declarative; the engine resolves them separately."
+    "Use nodeOverrides only for irregular printed spaces, such as one physical space spanning levels 4 and 5.",
+    "researchLevel is the logical level used for movement restrictions; spansLevels is descriptive UI metadata.",
+    "Reward data should remain declarative; the engine resolves it separately."
   ],
   "boards": {
     "bird": {
@@ -25,6 +27,15 @@
           "comment": "Example entry only. Replace values after checking the board."
         }
       ],
+      "nodeOverrides": [
+        {
+          "node": "bird:r4:p1",
+          "researchLevel": 5,
+          "spansLevels": [4, 5],
+          "verified": false,
+          "comment": "Example only: use when one printed space spans two logical levels."
+        }
+      ],
       "nodeRewards": [
         {
           "node": "bird:r0:p0",
@@ -37,6 +48,7 @@
     },
     "snake": {
       "bridges": [],
+      "nodeOverrides": [],
       "nodeRewards": []
     }
   }
