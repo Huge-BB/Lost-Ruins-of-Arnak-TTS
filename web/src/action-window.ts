@@ -1,11 +1,6 @@
-import type { GameState, PlayerId, TravelCost, TravelIcon } from './types.ts';
+import type { ActionWindowState, GameState, PlayerId, TravelCost, TravelIcon } from './types.ts';
 
 const ICONS: TravelIcon[] = ['boot','car','boat','plane'];
-
-export interface ActionWindowState {
-  playerId: PlayerId;
-  temporaryTravel: TravelCost;
-}
 
 function windowFor(state:GameState,playerId:PlayerId):ActionWindowState {
   const current=state.actionWindow;
