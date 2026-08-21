@@ -13,7 +13,9 @@ export type ResearchToken = 'magnifying' | 'journal';
 export type AssistantLevel = 'silver' | 'gold';
 export type ResearchNodeId = string;
 export type ResearchBridgeId = string;
-export type LeaderId = 'captain' | 'falconer' | 'baroness' | 'professor' | 'explorer' | 'mystic' | string;
+export type LeaderId = 'captain'|'falconer'|'baroness'|'professor'|'explorer'|'mystic'|string;
+export type ExplorerSnackId = 'free'|'coin'|'compass';
+export interface ExplorerMoveSpec { fromSiteId:string; snackId:ExplorerSnackId; }
 
 export interface Resources { tablet:number; arrowhead:number; jewel:number; coin:number; compass:number; fear:number; }
 export interface PlayerRules { journalMaxLead:number; }
@@ -26,9 +28,9 @@ export type ResearchReward =
  | { type:'UPGRADE_ASSISTANT'; level:'gold' }
  | { type:'REFRESH_ASSISTANTS'; amount:number|'all' }
  | { type:'ACQUIRE_ARTIFACT_FREE'; filter?:Record<string,unknown> }
- | { type:'OVERCOME_GUARDIAN_FREE' }
  | { type:'ACTIVATE_DISCOVERED_LEVEL1_SITE' }
  | { type:'ACTIVATE_VISIBLE_SILVER_ASSISTANT_THEN_BOTTOM' }
+ | { type:'OVERCOME_GUARDIAN_FREE' }
  | { type:'BONUS_TILE'; slot?:string }
  | { type:'SEQUENCE'; rewards:ResearchReward[] }
  | { type:'CHOOSE'; count:number; options:ResearchReward[] }
@@ -47,9 +49,12 @@ export interface ResearchBridgeDefinition { id:ResearchBridgeId; from:ResearchNo
 export interface ResearchRowDefinition { magnifyingPoints:number; journalPoints:number; grantsAssistant:boolean; nodes?:ResearchNodeDefinition[]; }
 export interface ResearchTrackDefinition { id:ResearchBoardId; name:string; rows:ResearchRowDefinition[]; bridges?:ResearchBridgeDefinition[]; templeArrivalPoints?: [number, number, number, number]; metadata?:Record<string,unknown>; }
 export interface ResearchManualNodeOverride { node:ResearchNodeId; researchLevel?:number; spansLevels?:number[]; verified:boolean; comment?:string; }
+export interface ResearchManualNodeReward { node?:ResearchNodeId; row?:string; token?:ResearchToken; rewards:ResearchReward[]; verified:boolean; comment?:string; }
 export interface ResearchManualBridge { from:ResearchNodeId; to:ResearchNodeId; cost:ResearchCost; allowedTokens?:ResearchToken[]; verified:boolean; comment?:string; }
 export interface ResearchManualBoardData { bridges:ResearchManualBridge[]; nodeOverrides?:ResearchManualNodeOverride[]; templeArrivalPoints?: [number, number, number, number]; }
 export interface ResearchManualData { $schemaVersion:1|2|3; boards:Partial<Record<ResearchBoardId, ResearchManualBoardData>>; }
+export interface ResearchRewardsManualBoardData { nodeRewards:ResearchManualNodeReward[]; }
+export interface ResearchRewardsManualData { $schemaVersion:1|2; boards:Partial<Record<ResearchBoardId, ResearchRewardsManualBoardData>>; }
 export interface PendingReward { playerId:PlayerId; sourceId:string; code:string; payload?:unknown; }
 export interface PlayerIdol { id:string; faceUp:boolean; inSlot?:boolean; }
 export interface PlayerAssistant { id:string; level:AssistantLevel; exhausted:boolean; }
@@ -67,8 +72,8 @@ export type GameAction =
  | { type:'END_TURN'; playerId:PlayerId }
  | { type:'PASS'; playerId:PlayerId }
  | { type:'PLAY_CARD'; playerId:PlayerId; cardId:CardId }
- | { type:'PLACE_WORKER'; playerId:PlayerId; siteId:string; paymentCardIds?:CardId[] }
- | { type:'DISCOVER_SITE'; playerId:PlayerId; siteId:string; paymentCardIds?:CardId[] }
+ | { type:'PLACE_WORKER'; playerId:PlayerId; siteId:string; paymentCardIds?:CardId[]; explorerMove?:ExplorerMoveSpec }
+ | { type:'DISCOVER_SITE'; playerId:PlayerId; siteId:string; paymentCardIds?:CardId[]; explorerMove?:ExplorerMoveSpec }
  | { type:'GAIN_RESOURCE'; playerId:PlayerId; resource:Resource; amount:number }
  | { type:'SPEND_RESOURCE'; playerId:PlayerId; resource:Resource; amount:number }
  | { type:'ADVANCE_RESEARCH'; playerId:PlayerId; track:ResearchToken; toNodeId?:ResearchNodeId; amount?:number; paymentCardIds?:CardId[] }
@@ -80,5 +85,5 @@ export type GameAction =
  | { type:'LEADER_CAPTAIN_SPECIALIST'; playerId:PlayerId; stackIndex:number }
  | { type:'LEADER_FALCONER_RETURN_EAGLE'; playerId:PlayerId; rewardPosition:number }
  | { type:'LEADER_PROFESSOR_BUY_ARCHIVE'; playerId:PlayerId; cardId:CardId; suitcaseCompass?:number }
- | { type:'LEADER_EXPLORER_SPEND_SNACK'; playerId:PlayerId; snackId:'free'|'coin'|'compass'; siteId:string }
+ | { type:'LEADER_EXPLORER_SPEND_SNACK'; playerId:PlayerId; snackId:ExplorerSnackId; siteId:string }
  | { type:'LEADER_MYSTIC_RITUAL'; playerId:PlayerId; fearCount:2|3|4 };
