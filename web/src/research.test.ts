@@ -1,21 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
+import { nextResearchPosition, RESEARCH_START_POSITION, researchRowPoints, rowGrantsAssistant } from './research.ts';
+import type { ResearchTrackDefinition } from './types.ts';
 
-type ResearchRow = {
-  magnifyingPoints: number;
-  journalPoints: number;
-  grantsAssistant: boolean;
-};
-
-type ResearchTrack = {
-  id: string;
-  name: string;
-  rows: ResearchRow[];
-  templePoints: number[];
-};
-
-async function loadTracks(): Promise<Record<string, ResearchTrack>> {
+async function loadTracks(): Promise<Record<string, ResearchTrackDefinition>> {
   const raw = await readFile(new URL('./generated/research-tracks.json', import.meta.url), 'utf8');
   return JSON.parse(raw);
 }
@@ -51,4 +40,29 @@ test('Snake research scoring is preserved from start toward the temple', async (
     snake.rows.map(row => row.grantsAssistant),
     [true, false, true, true, true, false, false],
   );
+});
+
+test('research position keeps the printed starting space separate from row zero', async () => {
+  const { bird } = await loadTracks();
+  assert.equal(nextResearchPosition(bird, 'magnifying', RESEARCH_START_POSITION), 0);
+  assert.equal(nextResearchPosition(bird, 'journal', RESEARCH_START_POSITION), 0);
+  assert.equal(researchRowPoints(bird, 'magnifying', RESEARCH_START_POSITION), 0);
+  assert.equal(researchRowPoints(bird, 'magnifying', 0), 1);
+  assert.equal(researchRowPoints(bird, 'journal', 0), 0);
+});
+
+test('only the magnifying glass can enter the temple', async () => {
+  const { bird } = await loadTracks();
+  const topRow = bird.rows.length - 1;
+  assert.equal(nextResearchPosition(bird, 'magnifying', topRow), bird.rows.length);
+  assert.throws(() => nextResearchPosition(bird, 'journal', topRow), /cannot advance farther/);
+  assert.equal(researchRowPoints(bird, 'magnifying', bird.rows.length), 0);
+  assert.throws(() => researchRowPoints(bird, 'journal', bird.rows.length), /Journal cannot enter the temple/);
+});
+
+test('assistant-row metadata can be queried independently of TTS coordinates', async () => {
+  const { bird } = await loadTracks();
+  assert.equal(rowGrantsAssistant(bird, 0), true);
+  assert.equal(rowGrantsAssistant(bird, 4), false);
+  assert.equal(rowGrantsAssistant(bird, RESEARCH_START_POSITION), false);
 });
