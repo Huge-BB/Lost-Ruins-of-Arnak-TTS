@@ -1,0 +1,43 @@
+{
+  "$schemaVersion": 1,
+  "notes": [
+    "This file is a human-maintained overlay for research data that TTS does not encode structurally.",
+    "Topology (rows, path nodes, forward edges, scores) should come from src/ResearchTrackData.ttslua.",
+    "Fill only costs/rewards that are visible on the printed board/rulebook and verify them against the physical board.",
+    "Resource keys: coin, compass, tablet, arrowhead, jewel.",
+    "Reward codes should remain declarative; the engine resolves them separately."
+  ],
+  "boards": {
+    "bird": {
+      "bridges": [
+        {
+          "from": "bird:start",
+          "to": "bird:r0:p0",
+          "cost": {
+            "coin": 0,
+            "compass": 0,
+            "tablet": 0,
+            "arrowhead": 0,
+            "jewel": 0
+          },
+          "reward": null,
+          "verified": false,
+          "comment": "Example entry only. Replace values after checking the board."
+        }
+      ],
+      "nodeRewards": [
+        {
+          "node": "bird:r0:p0",
+          "token": "magnifying",
+          "reward": null,
+          "verified": false,
+          "comment": "Use this only when a reward belongs to the destination node rather than the bridge."
+        }
+      ]
+    },
+    "snake": {
+      "bridges": [],
+      "nodeRewards": []
+    }
+  }
+}
