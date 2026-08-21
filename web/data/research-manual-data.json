@@ -54,12 +54,55 @@
       "nodeRewards": []
     },
     "monkey": {
-      "bridges": [],
+      "bridges": [
+        { "from": "monkey:start", "to": "monkey:r0:p0", "cost": {}, "rewards": [], "verified": false },
+        { "from": "monkey:start", "to": "monkey:r0:p1", "cost": {}, "rewards": [], "verified": false },
+        { "from": "monkey:start", "to": "monkey:r0:p2", "cost": {}, "rewards": [], "verified": false },
+        { "from": "monkey:r0:p0", "to": "monkey:r1:p0", "cost": {}, "rewards": [], "verified": false },
+        { "from": "monkey:r0:p1", "to": "monkey:r1:p0", "cost": {}, "rewards": [], "verified": false },
+        { "from": "monkey:r0:p1", "to": "monkey:r1:p1", "cost": {}, "rewards": [], "verified": false },
+        { "from": "monkey:r0:p2", "to": "monkey:r1:p1", "cost": {}, "rewards": [], "verified": false },
+        { "from": "monkey:r0:p2", "to": "monkey:r1:p2", "cost": {}, "rewards": [], "verified": false },
+        { "from": "monkey:r1:p0", "to": "monkey:r2:p0", "cost": {}, "rewards": [], "verified": false },
+        { "from": "monkey:r1:p1", "to": "monkey:r2:p0", "cost": {}, "rewards": [], "verified": false },
+        { "from": "monkey:r1:p2", "to": "monkey:r2:p0", "cost": {}, "rewards": [], "verified": false },
+        { "from": "monkey:r2:p0", "to": "monkey:r3:p0", "cost": {}, "rewards": [], "verified": false },
+        { "from": "monkey:r3:p0", "to": "monkey:r4:p0", "cost": {}, "rewards": [], "verified": false },
+        { "from": "monkey:r4:p0", "to": "monkey:r5:p0", "cost": {}, "rewards": [], "verified": false },
+        { "from": "monkey:r5:p0", "to": "monkey:r6:p0", "cost": {}, "rewards": [], "verified": false },
+        { "from": "monkey:r5:p0", "to": "monkey:r6:p1", "cost": {}, "rewards": [], "verified": false },
+        { "from": "monkey:r6:p0", "to": "monkey:r7:p0", "cost": {}, "rewards": [], "verified": false },
+        { "from": "monkey:r6:p1", "to": "monkey:r7:p0", "cost": {}, "rewards": [], "verified": false },
+        { "from": "monkey:r6:p1", "to": "monkey:r7:p1", "cost": {}, "rewards": [], "verified": false },
+        { "from": "monkey:r7:p0", "to": "monkey:temple", "cost": {}, "rewards": [], "verified": false, "comment": "Confirm printed Lost Temple entry and cost." },
+        { "from": "monkey:r7:p1", "to": "monkey:temple", "cost": {}, "rewards": [], "verified": false, "comment": "Confirm printed Lost Temple entry and cost." }
+      ],
       "nodeOverrides": [],
       "nodeRewards": []
     },
     "lizard": {
-      "bridges": [],
+      "bridges": [
+        { "from": "lizard:start", "to": "lizard:r0:p0", "cost": {}, "rewards": [], "verified": false },
+        { "from": "lizard:start", "to": "lizard:r0:p1", "cost": {}, "rewards": [], "verified": false },
+        { "from": "lizard:start", "to": "lizard:r0:p2", "cost": {}, "rewards": [], "verified": false },
+        { "from": "lizard:r0:p0", "to": "lizard:r1:p0", "cost": {}, "rewards": [], "verified": false },
+        { "from": "lizard:r0:p1", "to": "lizard:r1:p0", "cost": {}, "rewards": [], "verified": false },
+        { "from": "lizard:r0:p1", "to": "lizard:r1:p1", "cost": {}, "rewards": [], "verified": false },
+        { "from": "lizard:r0:p2", "to": "lizard:r1:p1", "cost": {}, "rewards": [], "verified": false },
+        { "from": "lizard:r1:p0", "to": "lizard:r2:p0", "cost": {}, "rewards": [], "verified": false },
+        { "from": "lizard:r1:p0", "to": "lizard:r2:p1", "cost": {}, "rewards": [], "verified": false },
+        { "from": "lizard:r1:p1", "to": "lizard:r2:p1", "cost": {}, "rewards": [], "verified": false },
+        { "from": "lizard:r1:p1", "to": "lizard:r2:p2", "cost": {}, "rewards": [], "verified": false },
+        { "from": "lizard:r2:p0", "to": "lizard:r3:p0", "cost": {}, "rewards": [], "verified": false },
+        { "from": "lizard:r2:p1", "to": "lizard:r3:p0", "cost": {}, "rewards": [], "verified": false },
+        { "from": "lizard:r2:p2", "to": "lizard:r3:p0", "cost": {}, "rewards": [], "verified": false },
+        { "from": "lizard:r3:p0", "to": "lizard:r4:p0", "cost": {}, "rewards": [], "verified": false },
+        { "from": "lizard:r4:p0", "to": "lizard:r5:p0", "cost": {}, "rewards": [], "verified": false },
+        { "from": "lizard:r4:p0", "to": "lizard:r5:p1", "cost": {}, "rewards": [], "verified": false },
+        { "from": "lizard:r5:p0", "to": "lizard:r6:p0", "cost": {}, "rewards": [], "verified": false },
+        { "from": "lizard:r5:p1", "to": "lizard:r6:p0", "cost": {}, "rewards": [], "verified": false },
+        { "from": "lizard:r6:p0", "to": "lizard:temple", "cost": {}, "rewards": [], "verified": false, "comment": "Confirm printed Lost Temple entry and cost." }
+      ],
       "nodeOverrides": [],
       "nodeRewards": []
     }
