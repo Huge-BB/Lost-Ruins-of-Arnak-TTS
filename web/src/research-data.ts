@@ -1,4 +1,5 @@
 import { applyResearchManualData } from './research-manual.ts';
+import { applyResearchRewardManualData, type ResearchRewardManualData } from './research-rewards-manual.ts';
 import type {
   ResearchBoardId,
   ResearchManualData,
@@ -7,17 +8,20 @@ import type {
 
 export type GeneratedResearchTracks = Partial<Record<ResearchBoardId, ResearchTrackDefinition>>;
 
-/** Merge generated TTS topology with any board-specific manual overlay. */
+/** Merge generated TTS topology with board costs/overrides and the separate node-reward overlay. */
 export function buildResearchTracks(
   generated: GeneratedResearchTracks,
   manual: ResearchManualData,
-  options: { requireVerifiedEntries?: boolean } = {},
+  options: { requireVerifiedEntries?: boolean; rewardManual?: ResearchRewardManualData } = {},
 ): GeneratedResearchTracks {
   const result: GeneratedResearchTracks = {};
   for (const boardId of ['bird', 'snake', 'monkey', 'lizard'] as const) {
     const track = generated[boardId];
     if (!track) continue;
-    result[boardId] = applyResearchManualData(track, manual, {
+    const withBoardData = applyResearchManualData(track, manual, {
+      requireVerified: options.requireVerifiedEntries ?? false,
+    });
+    result[boardId] = applyResearchRewardManualData(withBoardData, options.rewardManual, {
       requireVerified: options.requireVerifiedEntries ?? false,
     });
   }
