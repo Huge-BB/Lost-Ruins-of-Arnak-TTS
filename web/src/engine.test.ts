@@ -12,11 +12,39 @@ const cards: EngineContext = {
   },
 };
 
+const setupCards: EngineContext = {
+  cards: Object.fromEntries([
+    ...Array.from({ length: 8 }, (_, index) => ({ id: `i${index}`, name: `Item ${index}`, type: 'Item' as const, expansion: 'Base Game', cost: 1 })),
+    ...Array.from({ length: 6 }, (_, index) => ({ id: `a${index}`, name: `Artifact ${index}`, type: 'Artifact' as const, expansion: 'Base Game', cost: 1 })),
+    { id: 'fear', name: 'Fear', type: 'Fear' as const, expansion: 'Base Game', points: -1 },
+    ...['Yellow', 'Green', 'Blue', 'Red'].flatMap((color, colorIndex) =>
+      Array.from({ length: 4 }, (_, index) => ({
+        id: `s${colorIndex}-${index}`, name: `Starter ${colorIndex}-${index}`, type: 'Starter' as const, expansion: 'Base Game', color,
+      })),
+    ),
+  ].map(card => [card.id, card])),
+};
+
 test('START_GAME assigns base-game starting resources by player order', () => {
   const state = reduce(createGame(['p1', 'p2', 'p3', 'p4']), { type: 'START_GAME' });
   assert.deepEqual(state.playerOrder.map(id => ({ coin: state.players[id].resources.coin, compass: state.players[id].resources.compass })), [
     { coin: 2, compass: 0 }, { coin: 1, compass: 1 }, { coin: 2, compass: 1 }, { coin: 1, compass: 2 },
   ]);
+});
+
+test('seeded START_GAME initializes reproducible market and starting hands', () => {
+  const first = reduce(createGame(['p1', 'p2']), { type: 'START_GAME', seed: 'game-123' }, setupCards);
+  const second = reduce(createGame(['p1', 'p2']), { type: 'START_GAME', seed: 'game-123' }, setupCards);
+
+  assert.equal(first.setupSeed, 'game-123');
+  assert.deepEqual(first.market, second.market);
+  assert.deepEqual(first.players.p1.hand, second.players.p1.hand);
+  assert.equal(first.market.items.length, 5);
+  assert.equal(first.market.artifacts.length, 1);
+  assert.equal(first.players.p1.hand.length, 5);
+  assert.equal(first.players.p1.deck.length, 1);
+  assert.equal(first.players.p1.color, 'Yellow');
+  assert.equal(first.players.p2.color, 'Green');
 });
 
 test('END_TURN does not advance the round', () => {
