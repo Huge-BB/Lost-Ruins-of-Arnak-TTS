@@ -1,6 +1,16 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createGame, reduce } from './engine.ts';
+import type { EngineContext } from './types.ts';
+
+const cards: EngineContext = {
+  cards: {
+    item1: { id: 'item1', name: 'Test Item', type: 'Item', expansion: 'Base Game', cost: 2, points: 1 },
+    item2: { id: 'item2', name: 'Refill Item', type: 'Item', expansion: 'Base Game', cost: 1, points: 0 },
+    artifact1: { id: 'artifact1', name: 'Test Artifact', type: 'Artifact', expansion: 'Base Game', cost: 1, points: 2 },
+    artifact2: { id: 'artifact2', name: 'Refill Artifact', type: 'Artifact', expansion: 'Base Game', cost: 2, points: 1 },
+  },
+};
 
 test('START_GAME assigns base-game starting resources by player order', () => {
   const state = reduce(createGame(['p1', 'p2', 'p3', 'p4']), { type: 'START_GAME' });
@@ -74,4 +84,45 @@ test('resource spending rejects insufficient resources without mutating input st
     /Insufficient compass/,
   );
   assert.equal(state.players.p1.resources.compass, 0);
+});
+
+test('buying an item spends coins, puts it on the bottom of the deck, and refills the row', () => {
+  let state = reduce(createGame(['p1']), { type: 'START_GAME' });
+  state.market.items = ['item1'];
+  state.market.itemDeck = ['item2'];
+
+  state = reduce(state, { type: 'BUY_CARD', playerId: 'p1', cardId: 'item1' }, cards);
+
+  assert.equal(state.players.p1.resources.coin, 0);
+  assert.deepEqual(state.players.p1.deck, ['item1']);
+  assert.deepEqual(state.market.items, ['item2']);
+  assert.deepEqual(state.market.itemDeck, []);
+});
+
+test('buying an artifact spends compasses and places it in the played area', () => {
+  let state = reduce(createGame(['p1', 'p2']), { type: 'START_GAME' });
+  state.market.artifacts = ['artifact1'];
+  state.market.artifactDeck = ['artifact2'];
+
+  state = reduce(state, { type: 'BUY_CARD', playerId: 'p1', cardId: 'artifact1' }, cards);
+
+  assert.equal(state.players.p1.resources.compass, 0);
+  assert.deepEqual(state.players.p1.playedCards, ['artifact1']);
+  assert.deepEqual(state.market.artifacts, ['artifact2']);
+});
+
+test('market purchase fails when the card is unavailable or unaffordable', () => {
+  const state = reduce(createGame(['p1']), { type: 'START_GAME' });
+  state.market.items = ['item1'];
+
+  assert.throws(
+    () => reduce(state, { type: 'BUY_CARD', playerId: 'p1', cardId: 'item2' }, cards),
+    /not available/,
+  );
+
+  state.players.p1.resources.coin = 1;
+  assert.throws(
+    () => reduce(state, { type: 'BUY_CARD', playerId: 'p1', cardId: 'item1' }, cards),
+    /Insufficient coin/,
+  );
 });
