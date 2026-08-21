@@ -228,8 +228,12 @@ export interface MarketState {
 
 export interface ResearchState {
   board: ResearchBoardId;
+  /** Legacy row positions retained during the node migration for scoring compatibility. */
   magnifying: Record<PlayerId, number>;
   journal: Record<PlayerId, number>;
+  /** Exact physical research node. `board:start` means the printed starting area. */
+  magnifyingNode: Record<PlayerId, ResearchNodeId>;
+  journalNode: Record<PlayerId, ResearchNodeId>;
   templeArrivals: PlayerId[];
   templeArrivalPoints: Record<PlayerId, number>;
 }
@@ -270,7 +274,7 @@ export type GameAction =
   | { type: 'DISCOVER_SITE'; playerId: PlayerId; siteId: string; paymentCardIds?: CardId[] }
   | { type: 'GAIN_RESOURCE'; playerId: PlayerId; resource: Resource; amount: number }
   | { type: 'SPEND_RESOURCE'; playerId: PlayerId; resource: Resource; amount: number }
-  | { type: 'ADVANCE_RESEARCH'; playerId: PlayerId; track: ResearchToken; amount?: number }
+  | { type: 'ADVANCE_RESEARCH'; playerId: PlayerId; track: ResearchToken; toNodeId?: ResearchNodeId; amount?: number }
   | { type: 'CLAIM_ASSISTANT'; playerId: PlayerId; stackIndex: number }
   | { type: 'UPGRADE_ASSISTANT'; playerId: PlayerId; assistantId: string }
   | { type: 'EXHAUST_ASSISTANT'; playerId: PlayerId; assistantId: string }
