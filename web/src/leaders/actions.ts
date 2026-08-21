@@ -17,7 +17,15 @@ export function captainCallSpecialist(state: GameState, playerId: PlayerId, stac
   player.availableWorkers-=1;leader.data.specialistUsedThisRound=true;leader.data.specialistWorkerCommitted=true;next.pendingRewards.push({playerId,sourceId:'leader:captain:specialist',code:'assistant:ACTIVATE_SILVER',payload:{type:'ACTIVATE_ASSISTANT_EFFECT',assistantId,level:'silver',fromSupply:true}});return next;
 }
 export function falconerAdvanceEagle(state:GameState,playerId:PlayerId,amount=1):GameState{if(!Number.isInteger(amount)||amount<0)throw new Error('Eagle advance must be a non-negative integer');const next=structuredClone(state);const {leader}=requireLeader(next,playerId,'falconer');leader.data.eaglePosition=Math.min(Number(leader.data.eagleMaxPosition??4),Number(leader.data.eaglePosition??0)+amount);return next;}
-export function falconerReturnEagle(state:GameState,playerId:PlayerId,rewardPosition:number):GameState{const next=structuredClone(state);const {leader}=requireLeader(next,playerId,'falconer');const current=Number(leader.data.eaglePosition??0);if(!Number.isInteger(rewardPosition)||rewardPosition<1||rewardPosition>current)throw new Error(`Falconer cannot claim eagle reward ${rewardPosition} from position ${current}`);leader.data.eaglePosition=0;next.pendingRewards.push({playerId,sourceId:'leader:falconer:eagle',code:'leader:FALCONER_EAGLE_REWARD',payload:{rewardPosition,mainAction:rewardPosition>=3}});return next;}
+export function falconerReturnEagle(state:GameState,playerId:PlayerId,rewardPosition:number):GameState{
+  const next=structuredClone(state);const {player,leader}=requireLeader(next,playerId,'falconer');const current=Number(leader.data.eaglePosition??0);
+  if(!Number.isInteger(rewardPosition)||rewardPosition<1||rewardPosition>current)throw new Error(`Falconer cannot claim eagle reward ${rewardPosition} from position ${current}`);
+  leader.data.eaglePosition=0;
+  // The first two spaces are free actions: coin; then tablet plus one plane travel icon.
+  if(rewardPosition===1){player.resources.coin+=1;return next;}
+  if(rewardPosition===2){player.resources.tablet+=1;next.pendingRewards.push({playerId,sourceId:'leader:falconer:eagle',code:'leader:TRAVEL_CREDIT',payload:{travel:{plane:1},freeAction:true}});return next;}
+  next.pendingRewards.push({playerId,sourceId:'leader:falconer:eagle',code:'leader:FALCONER_EAGLE_REWARD',payload:{rewardPosition,mainAction:true}});return next;
+}
 
 export function baronessPlaySpecialDelivery(state:GameState,playerId:PlayerId):GameState{
   const next=structuredClone(state); const {player,leader}=requireLeader(next,playerId,'baroness'); const cardId=leader.data.specialDeliveryCardId as CardId|undefined;
