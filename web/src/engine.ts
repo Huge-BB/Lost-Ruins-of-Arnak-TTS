@@ -1,6 +1,8 @@
-import type { EngineContext, GameAction, GameState, PlayerId, Resource } from './types.ts';
+import { prepareBaseGameSetup } from './cards.ts';
+import type { EngineContext, GameAction, GameState, PlayerColor, PlayerId, Resource } from './types.ts';
 
 const MAX_ROUNDS = 5;
+const PLAYER_COLORS: PlayerColor[] = ['Yellow', 'Green', 'Blue', 'Red'];
 
 const STARTING_RESOURCES = [
   { coin: 2, compass: 0 },
@@ -29,6 +31,7 @@ export function createGame(playerIds: PlayerId[]): GameState {
     playerIds.map((id, index) => [id, {
       id,
       name: `Player ${index + 1}`,
+      color: PLAYER_COLORS[index],
       resources: emptyResources(),
       workers: 2,
       availableWorkers: 2,
@@ -128,11 +131,8 @@ function buyCard(state: GameState, action: Extract<GameAction, { type: 'BUY_CARD
 
   const player = assertPlayer(state, action.playerId);
   if (card.type === 'Item') {
-    // Newly bought items are placed at the bottom of the player's deck.
     player.deck.push(card.id);
   } else {
-    // Artifacts are resolved immediately; effect resolution will be handled by the
-    // card-effect engine. Keeping it in playedCards models its post-purchase zone.
     player.playedCards.push(card.id);
   }
 
@@ -169,6 +169,20 @@ export function reduce(state: GameState, action: GameAction, context: EngineCont
         next.players[playerId].resources.coin = starting.coin;
         next.players[playerId].resources.compass = starting.compass;
       });
+
+      if (Object.keys(context.cards).length > 0) {
+        const seed = action.seed ?? 'default';
+        const setup = prepareBaseGameSetup(context, next.playerOrder.length, seed);
+        next.setupSeed = seed;
+        next.market = setup.market;
+        next.playerOrder.forEach((playerId, index) => {
+          const playerSetup = setup.playerDecks[index];
+          next.players[playerId].color = playerSetup.color;
+          next.players[playerId].hand = playerSetup.hand;
+          next.players[playerId].deck = playerSetup.deck;
+        });
+      }
+
       next.phase = 'playing';
       return next;
     }
