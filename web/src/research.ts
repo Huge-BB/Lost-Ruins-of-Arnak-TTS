@@ -53,7 +53,9 @@ export function templeArrivalAward(track: ResearchTrackDefinition, arrivalIndex:
   if (!Number.isInteger(arrivalIndex) || arrivalIndex < 0) {
     throw new Error('Temple arrival index must be a non-negative integer');
   }
-  const points = track.templePoints[arrivalIndex];
+  const values = track.templeArrivalPoints;
+  if (!values) throw new Error(`Temple arrival points for ${track.id} have not been recorded`);
+  const points = values[arrivalIndex];
   if (points === undefined) throw new Error(`No temple arrival award for index ${arrivalIndex}`);
   return points;
 }
@@ -66,7 +68,6 @@ export function researchRowPoints(
   if (position === RESEARCH_START_POSITION) return 0;
   if (position === track.rows.length) {
     if (token !== 'magnifying') throw new Error('Journal cannot enter the temple');
-    // Temple-place points are awarded separately because they depend on arrival order.
     return 0;
   }
   const row = track.rows[position];
