@@ -11,7 +11,7 @@
     "extract:assistants": "node scripts/extract-assistants.mjs",
     "extract:data": "npm run extract:cards && npm run extract:sites && npm run extract:components && npm run extract:research && npm run extract:assistants",
     "validate:research": "node scripts/validate-research-manual.mjs",
-    "test:engine": "node --experimental-strip-types --test src/engine.test.ts src/cards.test.ts src/catalog.test.ts src/round.test.ts src/effects.test.ts src/travel.test.ts src/sites.test.ts src/discovery.test.ts src/research.test.ts src/research-manual.test.ts src/research-topology.test.ts src/research-action.test.ts src/research-rewards.test.ts src/research-idol-cost.test.ts src/pending-rewards.test.ts src/research-generated-topology.test.ts src/research-data.test.ts src/assistants.test.ts src/assistant-actions.test.ts src/scoring.test.ts src/temple-arrivals.test.ts",
+    "test:engine": "node --experimental-strip-types --test src/engine.test.ts src/cards.test.ts src/catalog.test.ts src/round.test.ts src/effects.test.ts src/travel.test.ts src/sites.test.ts src/discovery.test.ts src/research.test.ts src/research-manual.test.ts src/research-topology.test.ts src/research-action.test.ts src/research-rewards.test.ts src/research-idol-cost.test.ts src/temple-rules.test.ts src/pending-rewards.test.ts src/research-generated-topology.test.ts src/research-data.test.ts src/assistants.test.ts src/assistant-actions.test.ts src/scoring.test.ts src/temple-arrivals.test.ts",
     "test": "npm run validate:research && npm run test:engine"
   }
 }
