@@ -5,27 +5,43 @@ import { assignTempleArrival } from './temple-arrivals.ts';
 import type {
   GameState,
   PlayerId,
+  ResearchCost,
   ResearchNodeId,
   ResearchToken,
   ResearchTrackDefinition,
-  ResourceCost,
   SpendableResource,
 } from './types.ts';
 
 const COST_RESOURCES: SpendableResource[] = ['coin', 'compass', 'tablet', 'arrowhead', 'jewel'];
 
-function assertCanPay(state: GameState, playerId: PlayerId, cost: ResourceCost) {
+function usableIdolCount(state: GameState, playerId: PlayerId) {
+  return state.players[playerId].idols.filter(idol => !idol.inSlot).length;
+}
+
+function assertCanPay(state: GameState, playerId: PlayerId, cost: ResearchCost) {
   const player = state.players[playerId];
   if (!player) throw new Error(`Unknown player: ${playerId}`);
   for (const resource of COST_RESOURCES) {
     const amount = cost[resource] ?? 0;
     if (player.resources[resource] < amount) throw new Error(`Insufficient ${resource}`);
   }
+  const idolAmount = cost.usableIdol ?? 0;
+  if (usableIdolCount(state, playerId) < idolAmount) throw new Error('Insufficient usable idol');
 }
 
-function pay(state: GameState, playerId: PlayerId, cost: ResourceCost) {
+function pay(state: GameState, playerId: PlayerId, cost: ResearchCost) {
   const player = state.players[playerId];
   for (const resource of COST_RESOURCES) player.resources[resource] -= cost[resource] ?? 0;
+  let idolsToPay = cost.usableIdol ?? 0;
+  if (idolsToPay > 0) {
+    player.idols = player.idols.filter((idol) => {
+      if (idolsToPay > 0 && !idol.inSlot) {
+        idolsToPay -= 1;
+        return false;
+      }
+      return true;
+    });
+  }
 }
 
 export interface NodeResearchMove {
