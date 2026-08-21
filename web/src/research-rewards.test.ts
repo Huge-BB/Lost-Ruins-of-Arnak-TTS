@@ -59,6 +59,14 @@ test('assistant research reward is exposed as a structured pending choice', () =
   assert.deepEqual(game.pendingRewards[0].payload, { type: 'CLAIM_ASSISTANT', level: 'silver' });
 });
 
+test('Bird free guardian reward becomes a structured target-selection pending reward', () => {
+  const game = state();
+  resolveResearchReward(game, 'p1', 'bird:test', { type: 'OVERCOME_GUARDIAN_FREE' });
+  assert.equal(game.pendingRewards.length, 1);
+  assert.equal(game.pendingRewards[0].code, 'research:OVERCOME_GUARDIAN_FREE');
+  assert.deepEqual(game.pendingRewards[0].payload, { type: 'OVERCOME_GUARDIAN_FREE' });
+});
+
 test('Snake GAIN_FEAR_CARD adds a base-game Fear card to played cards', () => {
   const game = state();
   const context: EngineContext = {
