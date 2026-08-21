@@ -104,6 +104,36 @@ test('ADVANCE_RESEARCH moves the selected token from the printed start onto row 
   assert.equal(state.players.p1.researchMagnifying, 0);
 });
 
+test('base player journal cannot advance ahead of magnifying through reducer', async () => {
+  const researchTracks = await loadTracks();
+  const context: EngineContext = { cards: {}, researchTracks };
+  let state = reduce(createGame(['p1']), { type: 'START_GAME' }, context);
+  state = reduce(state, { type: 'ADVANCE_RESEARCH', playerId: 'p1', track: 'magnifying' }, context);
+  state = reduce(state, { type: 'ADVANCE_RESEARCH', playerId: 'p1', track: 'journal' }, context);
+
+  assert.throws(
+    () => reduce(state, { type: 'ADVANCE_RESEARCH', playerId: 'p1', track: 'journal' }, context),
+    /cannot advance more than 0 row/,
+  );
+});
+
+test('journalist-style rule allows journal to lead by exactly one row', async () => {
+  const researchTracks = await loadTracks();
+  const context: EngineContext = { cards: {}, researchTracks };
+  let state = reduce(createGame(['p1']), { type: 'START_GAME' }, context);
+  state.players.p1.rules.journalMaxLead = 1;
+  state = reduce(state, { type: 'ADVANCE_RESEARCH', playerId: 'p1', track: 'magnifying' }, context);
+  state = reduce(state, { type: 'ADVANCE_RESEARCH', playerId: 'p1', track: 'journal' }, context);
+  state = reduce(state, { type: 'ADVANCE_RESEARCH', playerId: 'p1', track: 'journal' }, context);
+
+  assert.equal(state.research.magnifying.p1, 0);
+  assert.equal(state.research.journal.p1, 1);
+  assert.throws(
+    () => reduce(state, { type: 'ADVANCE_RESEARCH', playerId: 'p1', track: 'journal' }, context),
+    /cannot advance more than 1 row/,
+  );
+});
+
 test('START_GAME can select the Snake research board', async () => {
   const researchTracks = await loadTracks();
   const context: EngineContext = { cards: {}, researchTracks };
@@ -115,6 +145,8 @@ test('journal cannot advance beyond its top scored row through the reducer', asy
   const researchTracks = await loadTracks();
   const context: EngineContext = { cards: {}, researchTracks };
   let state = reduce(createGame(['p1']), { type: 'START_GAME' }, context);
+  state.research.magnifying.p1 = researchTracks.bird.rows.length - 1;
+  state.players.p1.researchMagnifying = researchTracks.bird.rows.length - 1;
   state.research.journal.p1 = researchTracks.bird.rows.length - 1;
   state.players.p1.researchJournal = researchTracks.bird.rows.length - 1;
 
