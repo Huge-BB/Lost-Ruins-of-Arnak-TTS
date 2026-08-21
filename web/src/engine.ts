@@ -223,7 +223,8 @@ function advanceResearch(state: GameState, action: Extract<GameAction, { type: '
       playerId: action.playerId,
       token: action.track,
       toNodeId: action.toNodeId,
-    });
+      paymentCardIds: action.paymentCardIds,
+    }, context);
     return;
   }
 
