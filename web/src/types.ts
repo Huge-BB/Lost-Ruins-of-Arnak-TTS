@@ -23,7 +23,7 @@ export interface Resources {
 }
 
 export interface PlayerRules {
-  /** Maximum number of rows the journal may be ahead of the magnifying glass. */
+  /** Maximum number of research levels the journal may be ahead of the magnifying glass. */
   journalMaxLead: number;
 }
 
@@ -89,7 +89,12 @@ export interface AssistantDefinition {
 
 export interface ResearchNodeDefinition {
   id: ResearchNodeId;
+  rowIndex: number;
   pathIndex: number;
+  /** Logical level used for rules such as journal lead. It need not equal rowIndex on irregular boards. */
+  researchLevel: number;
+  /** Printed levels visually represented by this single physical space, e.g. [4, 5]. */
+  spansLevels?: number[];
 }
 
 export interface ResearchBridgeDefinition {
@@ -118,6 +123,14 @@ export interface ResearchTrackDefinition {
   templePoints: number[];
 }
 
+export interface ResearchManualNodeOverride {
+  node: ResearchNodeId;
+  researchLevel?: number;
+  spansLevels?: number[];
+  verified: boolean;
+  comment?: string;
+}
+
 export interface ResearchManualNodeReward {
   node: ResearchNodeId;
   token?: ResearchToken;
@@ -137,11 +150,12 @@ export interface ResearchManualBridge {
 
 export interface ResearchManualBoardData {
   bridges: ResearchManualBridge[];
+  nodeOverrides?: ResearchManualNodeOverride[];
   nodeRewards: ResearchManualNodeReward[];
 }
 
 export interface ResearchManualData {
-  $schemaVersion: 1;
+  $schemaVersion: 1 | 2;
   boards: Partial<Record<ResearchBoardId, ResearchManualBoardData>>;
 }
 
