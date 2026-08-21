@@ -1,5 +1,6 @@
 export type PlayerId = string;
 export type CardId = string;
+export type PlayerColor = 'Yellow' | 'Green' | 'Blue' | 'Red';
 export type Resource = 'tablet' | 'arrowhead' | 'jewel' | 'coin' | 'compass' | 'fear';
 export type CardType = 'Item' | 'Artifact' | 'Fear' | 'Starter' | 'Other';
 export type TravelIcon = 'boot' | 'car' | 'boat' | 'plane';
@@ -34,6 +35,7 @@ export interface CardDefinition {
 export interface PlayerState {
   id: PlayerId;
   name: string;
+  color: PlayerColor;
   resources: Resources;
   workers: number;
   availableWorkers: number;
@@ -70,6 +72,7 @@ export interface GameState {
   version: 1;
   phase: 'setup' | 'playing' | 'finished';
   round: number;
+  setupSeed?: string;
   firstPlayer: PlayerId;
   currentPlayer: PlayerId;
   players: Record<PlayerId, PlayerState>;
@@ -84,7 +87,7 @@ export interface EngineContext {
 }
 
 export type GameAction =
-  | { type: 'START_GAME' }
+  | { type: 'START_GAME'; seed?: string }
   | { type: 'END_TURN'; playerId: PlayerId }
   | { type: 'PASS'; playerId: PlayerId }
   | { type: 'PLACE_WORKER'; playerId: PlayerId; siteId: string }
