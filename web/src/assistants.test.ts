@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
-import { availableAssistantIds, prepareAssistantSupply } from './assistants.ts';
+import {
+  availableAssistantIds,
+  claimAssistantFromStack,
+  exhaustAssistant,
+  prepareAssistantSupply,
+  refreshAssistant,
+  upgradeAssistant,
+} from './assistants.ts';
 import type { AssistantDefinition } from './types.ts';
 
 async function loadAssistants(): Promise<Record<string, AssistantDefinition>> {
@@ -58,4 +65,29 @@ test('Snake board separates one special assistant per player before splitting th
     assert.equal(new Set([...supply.specialStack, ...supply.stacks.flat()]).size, 12);
     assert.equal(availableAssistantIds(supply).length, 3);
   }
+});
+
+test('claiming reveals the next assistant and creates a ready silver assistant', async () => {
+  const assistants = await loadAssistants();
+  const supply = prepareAssistantSupply(assistants, 'bird', 2, 'claim-seed');
+  const originalTop = supply.stacks[1][0];
+  const nextTop = supply.stacks[1][1];
+  const claimed = claimAssistantFromStack(supply, 1);
+
+  assert.deepEqual(claimed.assistant, { id: originalTop, level: 'silver', exhausted: false });
+  assert.equal(claimed.supply.stacks[1][0], nextTop);
+  assert.equal(supply.stacks[1][0], originalTop);
+});
+
+test('assistant lifecycle supports exhaust, refresh, and one silver-to-gold upgrade', () => {
+  const silver = { id: 'assistant', level: 'silver' as const, exhausted: false };
+  const exhausted = exhaustAssistant(silver);
+  assert.equal(exhausted.exhausted, true);
+  assert.equal(refreshAssistant(exhausted).exhausted, false);
+
+  const gold = upgradeAssistant(exhausted);
+  assert.equal(gold.level, 'gold');
+  assert.equal(gold.exhausted, true);
+  assert.throws(() => upgradeAssistant(gold), /already gold/);
+  assert.throws(() => exhaustAssistant(exhausted), /already exhausted/);
 });
