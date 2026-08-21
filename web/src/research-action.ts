@@ -104,7 +104,7 @@ export function advanceResearchByNode(
     state.research.templeArrivalPoints = arrival.points;
     state.research.magnifying[move.playerId] = track.rows.length;
     player.researchMagnifying = track.rows.length;
-    resolveResearchRewards(state, move.playerId, bridge.id, bridge.rewards);
+    resolveResearchRewards(state, move.playerId, bridge.id, bridge.rewards, context);
     rules.afterMove?.(moveContext);
     return bridge;
   }
@@ -113,8 +113,8 @@ export function advanceResearchByNode(
   state.research[move.token][move.playerId] = node.rowIndex;
   if (move.token === 'magnifying') player.researchMagnifying = node.rowIndex;
   else player.researchJournal = node.rowIndex;
-  resolveResearchRewards(state, move.playerId, bridge.id, bridge.rewards);
-  resolveResearchNodeRewards(state, move.playerId, move.token, node);
+  resolveResearchRewards(state, move.playerId, bridge.id, bridge.rewards, context);
+  resolveResearchNodeRewards(state, move.playerId, move.token, node, context);
   rules.afterMove?.(moveContext);
   return bridge;
 }
