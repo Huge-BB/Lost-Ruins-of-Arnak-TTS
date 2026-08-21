@@ -1,4 +1,4 @@
-import type { GameState, PlayerId, ResearchNodeDefinition, ResearchReward, ResearchToken, Resource } from './types.ts';
+import type { EngineContext, GameState, PlayerId, ResearchNodeDefinition, ResearchReward, ResearchToken, Resource } from './types.ts';
 
 function isGainResourceReward(reward: ResearchReward): reward is { type: 'GAIN_RESOURCE'; resource: Resource; amount: number } {
   return reward.type === 'GAIN_RESOURCE'
@@ -27,7 +27,21 @@ function drawCards(state: GameState, playerId: PlayerId, amount: number) {
   }
 }
 
-export function resolveResearchReward(state: GameState, playerId: PlayerId, sourceId: string, reward: ResearchReward | undefined) {
+function gainFearCards(state: GameState, playerId: PlayerId, amount: number, context?: EngineContext) {
+  if (!Number.isInteger(amount) || amount < 0) throw new Error('Fear amount must be a non-negative integer');
+  if (!context) throw new Error('Card context is required to gain Fear cards');
+  const fear = Object.values(context.cards).find(card => card.type === 'Fear' && card.expansion === 'Base Game');
+  if (!fear) throw new Error('No base-game Fear card found');
+  for (let i = 0; i < amount; i += 1) state.players[playerId].playedCards.push(fear.id);
+}
+
+export function resolveResearchReward(
+  state: GameState,
+  playerId: PlayerId,
+  sourceId: string,
+  reward: ResearchReward | undefined,
+  context?: EngineContext,
+) {
   if (!reward) return;
   if (isGainResourceReward(reward)) {
     const player = state.players[playerId];
@@ -39,21 +53,37 @@ export function resolveResearchReward(state: GameState, playerId: PlayerId, sour
     drawCards(state, playerId, Number(reward.amount));
     return;
   }
+  if (reward.type === 'GAIN_FEAR_CARD') {
+    gainFearCards(state, playerId, Number(reward.amount), context);
+    return;
+  }
   if (reward.type === 'SEQUENCE' && Array.isArray(reward.rewards)) {
-    for (const child of reward.rewards) resolveResearchReward(state, playerId, sourceId, child);
+    for (const child of reward.rewards) resolveResearchReward(state, playerId, sourceId, child, context);
     return;
   }
   enqueuePending(state, playerId, sourceId, reward);
 }
 
-export function resolveResearchRewards(state: GameState, playerId: PlayerId, sourceId: string, rewards: ResearchReward[] | undefined) {
-  for (const reward of rewards ?? []) resolveResearchReward(state, playerId, sourceId, reward);
+export function resolveResearchRewards(
+  state: GameState,
+  playerId: PlayerId,
+  sourceId: string,
+  rewards: ResearchReward[] | undefined,
+  context?: EngineContext,
+) {
+  for (const reward of rewards ?? []) resolveResearchReward(state, playerId, sourceId, reward, context);
 }
 
-export function resolveResearchNodeRewards(state: GameState, playerId: PlayerId, token: ResearchToken, node: ResearchNodeDefinition) {
+export function resolveResearchNodeRewards(
+  state: GameState,
+  playerId: PlayerId,
+  token: ResearchToken,
+  node: ResearchNodeDefinition,
+  context?: EngineContext,
+) {
   for (const entry of node.rewards ?? []) {
     if (!entry.verified) continue;
     if (entry.token && entry.token !== token) continue;
-    resolveResearchRewards(state, playerId, node.id, entry.rewards);
+    resolveResearchRewards(state, playerId, node.id, entry.rewards, context);
   }
 }
