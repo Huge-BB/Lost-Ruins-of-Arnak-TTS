@@ -34,7 +34,7 @@ const track: ResearchTrackDefinition = {
     { id: 'bird:r0:p0->bird:r1:p1', from: 'bird:r0:p0', to: 'bird:r1:p1', cost: { compass: 2 }, verified: true },
     { id: 'bird:r1:p0->bird:temple', from: 'bird:r1:p0', to: 'bird:temple', cost: { jewel: 1 }, verified: true },
   ],
-  templePoints: [23, 21, 20, 19],
+  templeArrivalPoints: [11, 9, 7, 5],
 };
 
 function playingGame() {
@@ -75,7 +75,7 @@ test('illegal topology move is rejected before resources change', () => {
   assert.deepEqual(state.players.p1.resources, before);
 });
 
-test('irregular researchLevel, not row count, controls journalist lead', () => {
+test('irregular researchLevel, not row count, controls journal lead', () => {
   const state = playingGame();
   advanceResearchByNode(state, track, { playerId: 'p1', token: 'magnifying', toNodeId: 'bird:r0:p0' });
   advanceResearchByNode(state, track, { playerId: 'p1', token: 'journal', toNodeId: 'bird:r0:p0' });
@@ -101,14 +101,14 @@ test('insufficient bridge cost leaves node and resources unchanged', () => {
   assert.deepEqual(state, before);
 });
 
-test('magnifying glass entering the Lost Temple pays cost and records arrival points', () => {
+test('magnifying glass entering the Lost Temple pays cost and records configured arrival points', () => {
   const state = playingGame();
   advanceResearchByNode(state, track, { playerId: 'p1', token: 'magnifying', toNodeId: 'bird:r0:p0' });
   advanceResearchByNode(state, track, { playerId: 'p1', token: 'magnifying', toNodeId: 'bird:r1:p0' });
   advanceResearchByNode(state, track, { playerId: 'p1', token: 'magnifying', toNodeId: 'bird:temple' });
   assert.equal(state.players.p1.resources.jewel, 1);
   assert.equal(state.research.magnifyingNode.p1, 'bird:temple');
-  assert.equal(state.research.templeArrivalPoints.p1, 23);
+  assert.equal(state.research.templeArrivalPoints.p1, 11);
   assert.deepEqual(state.research.templeArrivals, ['p1']);
 });
 
