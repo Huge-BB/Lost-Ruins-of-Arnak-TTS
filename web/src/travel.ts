@@ -1,9 +1,11 @@
 import type { CardId, EngineContext, TravelCost, TravelIcon } from './types.ts';
 
 const ICONS: TravelIcon[] = ['boot', 'car', 'boat', 'plane'];
+export type TravelPool = Record<TravelIcon, number>;
 
-function totalTravel(cardIds: CardId[], context: EngineContext): Record<TravelIcon, number> {
-  const total = { boot: 0, car: 0, boat: 0, plane: 0 };
+function emptyTravel():TravelPool{return {boot:0,car:0,boat:0,plane:0};}
+export function totalCardTravel(cardIds: CardId[], context: EngineContext): TravelPool {
+  const total = emptyTravel();
   for (const cardId of cardIds) {
     const card = context.cards[cardId];
     if (!card) throw new Error(`Unknown travel card: ${cardId}`);
@@ -11,38 +13,25 @@ function totalTravel(cardIds: CardId[], context: EngineContext): Record<TravelIc
   }
   return total;
 }
+function addTravel(a:TravelCost={},b:TravelCost={}):TravelPool{const total=emptyTravel();for(const icon of ICONS)total[icon]=(a[icon]??0)+(b[icon]??0);return total;}
 
-export function canPayTravel(cost: TravelCost = {}, cardIds: CardId[], context: EngineContext): boolean {
-  const available = totalTravel(cardIds, context);
+/** Return one valid amount of temporary travel consumed by this payment, preferring card icons first. */
+export function planTravelPayment(cost:TravelCost={},cardIds:CardId[],context:EngineContext,temporary:TravelCost={}):TravelCost|undefined{
+  const cards=totalCardTravel(cardIds,context),available=addTravel(cards,temporary),remaining={...cost};
+  // Payment hierarchy: plane only pays plane; car/boat/plane pay boots; plane substitutes car/boat.
+  const use=(icon:TravelIcon,needIcon:TravelIcon,amount:number)=>{if(amount<=0)return;const take=Math.min(available[icon],amount);available[icon]-=take;(remaining[needIcon]??=0);remaining[needIcon]=Math.max(0,(remaining[needIcon]??0)-take);};
+  use('plane','plane',remaining.plane??0);
+  use('car','car',remaining.car??0);use('plane','car',remaining.car??0);
+  use('boat','boat',remaining.boat??0);use('plane','boat',remaining.boat??0);
+  use('boot','boot',remaining.boot??0);use('car','boot',remaining.boot??0);use('boat','boot',remaining.boot??0);use('plane','boot',remaining.boot??0);
+  if(ICONS.some(icon=>(remaining[icon]??0)>0))return undefined;
+  const combined=addTravel(cards,temporary),used=emptyTravel();for(const icon of ICONS)used[icon]=combined[icon]-available[icon];
+  const temporaryUsed:TravelCost={};for(const icon of ICONS){const amount=Math.max(0,used[icon]-cards[icon]);if(amount)temporaryUsed[icon]=amount;}
+  return temporaryUsed;
+}
 
-  const planeNeed = cost.plane ?? 0;
-  if (available.plane < planeNeed) return false;
-  available.plane -= planeNeed;
-
-  const carNeed = cost.car ?? 0;
-  const carUse = Math.min(available.car, carNeed);
-  available.car -= carUse;
-  let remainingCar = carNeed - carUse;
-  if (available.plane < remainingCar) return false;
-  available.plane -= remainingCar;
-
-  const boatNeed = cost.boat ?? 0;
-  const boatUse = Math.min(available.boat, boatNeed);
-  available.boat -= boatUse;
-  let remainingBoat = boatNeed - boatUse;
-  if (available.plane < remainingBoat) return false;
-  available.plane -= remainingBoat;
-
-  let bootNeed = cost.boot ?? 0;
-  const bootUse = Math.min(available.boot, bootNeed);
-  available.boot -= bootUse;
-  bootNeed -= bootUse;
-
-  const groundUse = Math.min(available.car + available.boat, bootNeed);
-  bootNeed -= groundUse;
-  if (bootNeed > available.plane) return false;
-
-  return true;
+export function canPayTravel(cost: TravelCost = {}, cardIds: CardId[], context: EngineContext, temporary:TravelCost={}): boolean {
+  return planTravelPayment(cost,cardIds,context,temporary)!==undefined;
 }
 
 export function hasTravelCost(cost: TravelCost = {}): boolean {
