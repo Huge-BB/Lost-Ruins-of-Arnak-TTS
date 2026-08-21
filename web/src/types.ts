@@ -18,6 +18,11 @@ export interface Resources {
   fear: number;
 }
 
+export interface PlayerRules {
+  /** Maximum number of rows the journal may be ahead of the magnifying glass. */
+  journalMaxLead: number;
+}
+
 export type CardEffect =
   | { type: 'GAIN_RESOURCE'; resource: Resource; amount: number }
   | { type: 'DRAW_CARD'; amount: number };
@@ -112,6 +117,7 @@ export interface PlayerState {
   id: PlayerId;
   name: string;
   color: PlayerColor;
+  rules: PlayerRules;
   resources: Resources;
   workers: number;
   availableWorkers: number;
@@ -124,6 +130,7 @@ export interface PlayerState {
   playedCards: CardId[];
   idols: PlayerIdol[];
   assistants: PlayerAssistant[];
+  defeatedGuardians: string[];
 }
 
 export interface SiteState {
