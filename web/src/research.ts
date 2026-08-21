@@ -49,6 +49,15 @@ export function nextLegalResearchPosition(
   return next;
 }
 
+export function templeArrivalAward(track: ResearchTrackDefinition, arrivalIndex: number): number {
+  if (!Number.isInteger(arrivalIndex) || arrivalIndex < 0) {
+    throw new Error('Temple arrival index must be a non-negative integer');
+  }
+  const points = track.templePoints[arrivalIndex];
+  if (points === undefined) throw new Error(`No temple arrival award for index ${arrivalIndex}`);
+  return points;
+}
+
 export function researchRowPoints(
   track: ResearchTrackDefinition,
   token: ResearchToken,
