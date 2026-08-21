@@ -13,13 +13,11 @@ function sectionBetween(startMarker, endMarker) {
   if (start < 0 || end < 0) throw new Error(`Could not locate ${startMarker} section`);
   return lua.slice(start, end);
 }
-
 function sectionFrom(startMarker) {
   const start = lua.indexOf(startMarker);
   if (start < 0) throw new Error(`Could not locate ${startMarker} section`);
   return lua.slice(start);
 }
-
 function extractBalancedBlock(text, startIndex) {
   const open = text.indexOf('{', startIndex);
   if (open < 0) throw new Error('Expected opening brace');
@@ -33,13 +31,11 @@ function extractBalancedBlock(text, startIndex) {
   }
   throw new Error('Unbalanced Lua table');
 }
-
 function extractRowsBlock(section) {
   const marker = section.indexOf('rows =');
   if (marker < 0) throw new Error('Missing rows table');
   return extractBalancedBlock(section, marker);
 }
-
 function splitTopLevelTables(block) {
   const result = [];
   let depth = 0;
@@ -59,26 +55,24 @@ function splitTopLevelTables(block) {
   }
   return result;
 }
-
-function extractPathForwards(rowBlock) {
+function extractPaths(rowBlock) {
   const marker = rowBlock.indexOf('paths =');
   if (marker < 0) return [];
   const pathsBlock = extractBalancedBlock(rowBlock, marker);
   return splitTopLevelTables(pathsBlock).map((pathBlock) => {
     const match = pathBlock.match(/forward\s*=\s*\{\s*([\d,\s]+)\}/);
-    if (!match) return [];
-    return match[1]
-      .split(',')
-      .map(value => Number(value.trim()))
-      .filter(Number.isFinite)
-      .map(oneBased => oneBased - 1);
+    const forwards = match
+      ? match[1].split(',').map(value => Number(value.trim())).filter(Number.isFinite).map(oneBased => oneBased - 1)
+      : [];
+    return {
+      forwards,
+      bonusSlot: /bonus\s*=\s*true/.test(pathBlock) || /bonusPos\s*=/.test(pathBlock),
+    };
   });
 }
-
 function nodeId(boardId, rowIndex, pathIndex) {
   return `${boardId}:r${rowIndex}:p${pathIndex}`;
 }
-
 function extractTrack(name, section) {
   const boardId = name.toLowerCase();
   const rawRows = splitTopLevelTables(extractRowsBlock(section));
@@ -89,13 +83,12 @@ function extractTrack(name, section) {
     const magnifyingMatch = rowBlock.match(/magnifying\s*=\s*(\d+)/);
     const journalMatch = rowBlock.match(/journal\s*=\s*(\d+)/);
     if (!magnifyingMatch || !journalMatch) throw new Error(`${name} row missing score data`);
-    const forwards = extractPathForwards(rowBlock);
+    const paths = extractPaths(rowBlock);
     return {
       magnifyingPoints: Number(magnifyingMatch[1]),
       journalPoints: Number(journalMatch[1]),
       grantsAssistant: /assistant\s*=\s*true/.test(rowBlock),
-      pathCount: forwards.length,
-      forwards,
+      paths,
     };
   });
 
@@ -103,19 +96,20 @@ function extractTrack(name, section) {
     magnifyingPoints: row.magnifyingPoints,
     journalPoints: row.journalPoints,
     grantsAssistant: row.grantsAssistant,
-    nodes: Array.from({ length: row.pathCount }, (_, pathIndex) => ({
+    nodes: row.paths.map((path, pathIndex) => ({
       id: nodeId(boardId, rowIndex, pathIndex),
       rowIndex,
       pathIndex,
       researchLevel: rowIndex,
+      ...(path.bonusSlot ? { metadata: { bonusSlot: true } } : {}),
     })),
   }));
 
   const bridges = [];
   for (let rowIndex = 0; rowIndex < rows.length - 1; rowIndex += 1) {
     const originalSource = rowsTopDown[rowsTopDown.length - 1 - rowIndex];
-    originalSource.forwards.forEach((targets, pathIndex) => {
-      for (const targetPathIndex of targets) {
+    originalSource.paths.forEach((path, pathIndex) => {
+      for (const targetPathIndex of path.forwards) {
         bridges.push({
           id: `${nodeId(boardId, rowIndex, pathIndex)}->${nodeId(boardId, rowIndex + 1, targetPathIndex)}`,
           from: nodeId(boardId, rowIndex, pathIndex),
@@ -124,15 +118,9 @@ function extractTrack(name, section) {
       }
     });
   }
-
   for (let pathIndex = 0; pathIndex < rows[0].nodes.length; pathIndex += 1) {
-    bridges.unshift({
-      id: `${boardId}:start->${nodeId(boardId, 0, pathIndex)}`,
-      from: `${boardId}:start`,
-      to: nodeId(boardId, 0, pathIndex),
-    });
+    bridges.unshift({ id: `${boardId}:start->${nodeId(boardId, 0, pathIndex)}`, from: `${boardId}:start`, to: nodeId(boardId, 0, pathIndex) });
   }
-
   return { id: boardId, name, rows, bridges };
 }
 
@@ -147,18 +135,14 @@ const checklist = {
   $schemaVersion: 3,
   notes: [
     'Generated from ResearchTrackData.ttslua. Do not edit topology here by hand.',
+    'bonusSlot metadata is extracted from TTS bonus=true/bonusPos markers.',
     'Bird/Snake manual overlays contain verified base-game costs. Monkey/Lizard special rules are temple-specific.',
     'researchLevel defaults to rowIndex. Override only when one printed space spans/skips logical levels.',
   ],
   boards: Object.fromEntries(Object.entries(result).map(([boardId, track]) => [boardId, {
     templeArrivalPoints: [0, 0, 0, 0],
     nodes: track.rows.flatMap(row => row.nodes).map(node => ({ ...node, verified: false })),
-    bridges: track.bridges.map(bridge => ({
-      ...bridge,
-      cost: {},
-      rewards: [],
-      verified: false,
-    })),
+    bridges: track.bridges.map(bridge => ({ ...bridge, cost: {}, rewards: [], verified: false })),
   }])),
 };
 
