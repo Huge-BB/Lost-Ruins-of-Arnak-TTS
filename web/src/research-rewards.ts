@@ -35,6 +35,24 @@ function gainFearCards(state: GameState, playerId: PlayerId, amount: number, con
   for (let i = 0; i < amount; i += 1) state.players[playerId].playedCards.push(fear.id);
 }
 
+function refreshAssistants(state: GameState, playerId: PlayerId, amount: number | 'all') {
+  const player = state.players[playerId];
+  if (!player) throw new Error(`Unknown player: ${playerId}`);
+  if (amount === 'all') {
+    for (const assistant of player.assistants) assistant.exhausted = false;
+    return;
+  }
+  if (!Number.isInteger(amount) || Number(amount) < 0) throw new Error('Assistant refresh amount must be non-negative');
+  let remaining = Number(amount);
+  for (const assistant of player.assistants) {
+    if (remaining === 0) break;
+    if (assistant.exhausted) {
+      assistant.exhausted = false;
+      remaining -= 1;
+    }
+  }
+}
+
 export function resolveResearchReward(
   state: GameState,
   playerId: PlayerId,
@@ -55,6 +73,10 @@ export function resolveResearchReward(
   }
   if (reward.type === 'GAIN_FEAR_CARD') {
     gainFearCards(state, playerId, Number(reward.amount), context);
+    return;
+  }
+  if (reward.type === 'REFRESH_ASSISTANTS') {
+    refreshAssistants(state, playerId, reward.amount);
     return;
   }
   if (reward.type === 'SEQUENCE' && Array.isArray(reward.rewards)) {
