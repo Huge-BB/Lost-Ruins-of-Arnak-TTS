@@ -33,9 +33,9 @@ export function nextLegalResearchPosition(
   currentPosition: number,
   magnifyingPosition: number,
   journalPosition: number,
-  rules: ResearchMovementRules = {},
+  rules: ResearchMovementRules | number = {},
 ): number {
-  const journalMaxLead = rules.journalMaxLead ?? 0;
+  const journalMaxLead = typeof rules === 'number' ? rules : (rules.journalMaxLead ?? 0);
   if (!Number.isInteger(journalMaxLead) || journalMaxLead < 0) {
     throw new Error('journalMaxLead must be a non-negative integer');
   }
