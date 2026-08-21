@@ -13,30 +13,20 @@ function validateCost(cost: ResourceCost, label: string) {
   for (const key of COST_KEYS) {
     const value = cost[key];
     if (value === undefined) continue;
-    if (!Number.isInteger(value) || value < 0) {
-      throw new Error(`${label} has invalid ${key} cost`);
-    }
+    if (!Number.isInteger(value) || value < 0) throw new Error(`${label} has invalid ${key} cost`);
   }
 }
 
-function bridgeKey(from: string, to: string) {
-  return `${from}->${to}`;
-}
-
-function allNodes(track: ResearchTrackDefinition): ResearchNodeDefinition[] {
-  return track.rows.flatMap(row => row.nodes ?? []);
-}
+function bridgeKey(from: string, to: string) { return `${from}->${to}`; }
+function allNodes(track: ResearchTrackDefinition): ResearchNodeDefinition[] { return track.rows.flatMap(row => row.nodes ?? []); }
 
 function validateNodeOverride(node: ResearchNodeDefinition, label: string) {
-  if (!Number.isInteger(node.researchLevel) || node.researchLevel < 0) {
-    throw new Error(`${label} has invalid researchLevel`);
-  }
+  if (!Number.isInteger(node.researchLevel) || node.researchLevel < 0) throw new Error(`${label} has invalid researchLevel`);
   if (node.spansLevels !== undefined) {
     if (node.spansLevels.length === 0 || node.spansLevels.some(level => !Number.isInteger(level) || level < 0)) {
       throw new Error(`${label} has invalid spansLevels`);
     }
-    const unique = new Set(node.spansLevels);
-    if (unique.size !== node.spansLevels.length) throw new Error(`${label} has duplicate spansLevels`);
+    if (new Set(node.spansLevels).size !== node.spansLevels.length) throw new Error(`${label} has duplicate spansLevels`);
   }
 }
 
@@ -52,10 +42,10 @@ export function applyResearchManualData(
   const requireVerified = options.requireVerified ?? false;
   const next = structuredClone(track);
   const nodes = new Map(allNodes(next).map(node => [node.id, node]));
-  const bridges = next.bridges ?? [];
-  const topology = new Map(bridges.map(bridge => [bridgeKey(bridge.from, bridge.to), bridge]));
+  const topology = new Map((next.bridges ?? []).map(bridge => [bridgeKey(bridge.from, bridge.to), bridge]));
   const seenBridges = new Set<string>();
   const seenNodes = new Set<string>();
+  const seenRewards = new Set<string>();
 
   for (const manualNode of overlay.nodeOverrides ?? []) {
     if (seenNodes.has(manualNode.node)) throw new Error(`Duplicate manual research node override: ${manualNode.node}`);
@@ -72,25 +62,30 @@ export function applyResearchManualData(
     const key = bridgeKey(manualBridge.from, manualBridge.to);
     if (seenBridges.has(key)) throw new Error(`Duplicate manual research bridge: ${key}`);
     seenBridges.add(key);
-
     const target = topology.get(key);
     if (!target) throw new Error(`Manual research bridge does not exist in ${boardId} topology: ${key}`);
     validateCost(manualBridge.cost, key);
     if (requireVerified && !manualBridge.verified) throw new Error(`Research bridge is not verified: ${key}`);
-
     target.cost = { ...manualBridge.cost };
     target.reward = manualBridge.reward;
     target.verified = manualBridge.verified;
   }
 
+  for (const manualReward of overlay.nodeRewards ?? []) {
+    const target = nodes.get(manualReward.node);
+    if (!target) throw new Error(`Manual research reward node does not exist in ${boardId} topology: ${manualReward.node}`);
+    const key = `${manualReward.node}:${manualReward.token ?? 'any'}`;
+    if (seenRewards.has(key)) throw new Error(`Duplicate manual research node reward: ${key}`);
+    seenRewards.add(key);
+    if (requireVerified && !manualReward.verified) throw new Error(`Research node reward is not verified: ${key}`);
+    target.rewards ??= [];
+    target.rewards.push({ token: manualReward.token, reward: manualReward.reward, verified: manualReward.verified });
+  }
+
   return next;
 }
 
-export function findResearchBridge(
-  track: ResearchTrackDefinition,
-  from: string,
-  to: string,
-): ResearchBridgeDefinition {
+export function findResearchBridge(track: ResearchTrackDefinition, from: string, to: string): ResearchBridgeDefinition {
   const bridge = (track.bridges ?? []).find(candidate => candidate.from === from && candidate.to === to);
   if (!bridge) throw new Error(`Illegal research bridge: ${from}->${to}`);
   return bridge;
