@@ -56,11 +56,11 @@ export interface ResearchManualData { $schemaVersion:1|2|3; boards:Partial<Recor
 export interface ResearchRewardsManualBoardData { nodeRewards:ResearchManualNodeReward[]; }
 export interface ResearchRewardsManualData { $schemaVersion:1|2; boards:Partial<Record<ResearchBoardId, ResearchRewardsManualBoardData>>; }
 export interface PendingReward { playerId:PlayerId; sourceId:string; code:string; payload?:unknown; }
-export interface PlayerIdol { id:string; faceUp:boolean; inSlot?:boolean; }
+export interface PlayerIdol { id:string; faceUp:boolean; inSlot?:boolean; slotIndex?:number; }
 export interface PlayerAssistant { id:string; level:AssistantLevel; exhausted:boolean; }
 export interface PlayerLeaderState { id:LeaderId; data:Record<string,unknown>; }
 export interface PlayerState { id:PlayerId; name:string; color:PlayerColor; rules:PlayerRules; resources:Resources; workers:number; availableWorkers:number; hasPassed:boolean; researchMagnifying:number; researchJournal:number; deck:CardId[]; hand:CardId[]; discard:CardId[]; playedCards:CardId[]; idols:PlayerIdol[]; assistants:PlayerAssistant[]; defeatedGuardians:string[]; leader?:PlayerLeaderState; }
-export interface SiteState { id:string; level:1|2; tileId?:string; occupiedBy?:PlayerId; guardian?:string; idolSlots:number; travelCost?:TravelCost; }
+export interface SiteState { id:string; level:1|2; tileId?:string; occupiedBy?:PlayerId; guardian?:string; idolSlots:number; travelCost?:TravelCost; faceUpIdolId?:string; faceDownIdolIds?:string[]; }
 export interface DiscoveryState { level1Deck:string[]; level2Deck:string[]; guardianDeck:string[]; idolDeck:string[]; }
 export interface AssistantSupplyState { stacks:string[][]; specialStack:string[]; }
 export interface MarketState { items:CardId[]; artifacts:CardId[]; itemDeck:CardId[]; artifactDeck:CardId[]; exiled:CardId[]; }
