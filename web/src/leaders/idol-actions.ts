@@ -5,22 +5,19 @@ import { falconerAdvanceEagle, mysticPerformRitual } from './actions.ts';
 export type IdolEffect =
   | 'coinToJewel' | 'arrowhead' | 'tablets' | 'coinCompass' | 'draw'
   | 'leaderUnique' | 'mysticExileArrowhead' | 'mysticExileRitual';
-
 interface SlotConfig { points:number; blue:boolean; fear?:boolean; }
 const FOUR:SlotConfig[]=[{points:1,blue:false},{points:2,blue:false},{points:3,blue:true},{points:4,blue:true}];
 const MYSTIC:SlotConfig[]=[{points:1,blue:false,fear:true},{points:2,blue:false},{points:2,blue:true,fear:true},{points:3,blue:true},{points:4,blue:true}];
 export function idolSlotConfig(leaderId:LeaderId|undefined):SlotConfig[]{return leaderId==='mystic'?MYSTIC:FOUR;}
-
 function fearCard(context:EngineContext){return Object.values(context.cards).find(card=>card.type==='Fear'&&card.expansion==='Base Game');}
 function queueExile(next:GameState,playerId:PlayerId,source:string){next.pendingRewards.push({playerId,sourceId:source,code:'leader:EXILE_OWN_CARD',payload:{max:1,freeAction:true}});}
 function resolveStandard(next:GameState,playerId:PlayerId,effect:IdolEffect){const p=next.players[playerId];switch(effect){case'coinToJewel':if(p.resources.coin<1)throw new Error('Idol jewel effect requires 1 coin');p.resources.coin-=1;p.resources.jewel+=1;return next;case'arrowhead':p.resources.arrowhead+=1;return next;case'tablets':p.resources.tablet+=2;return next;case'coinCompass':p.resources.coin+=1;p.resources.compass+=1;return next;case'draw':{const card=p.deck.shift();if(card)p.hand.push(card);return next;}default:return undefined;}}
 function refreshExplorerSnack(next:GameState,playerId:PlayerId,snackId?:'free'|'coin'|'compass'){const leader=next.players[playerId].leader!;const snacks=(leader.data.snacks??[]) as Array<{id:string;used:boolean;siteId?:string}>;const used=snacks.filter(snack=>snack.used);if(!used.length)return;if(!snackId)throw new Error('Explorer unique idol effect requires a used snack choice');const snack=used.find(candidate=>candidate.id===snackId);if(!snack)throw new Error('Chosen Explorer snack is not currently used');snack.used=false;delete snack.siteId;}
 
-/** Place any unused idol into any empty slot. Blue slots may use the leader's unique effect; ordinary effects remain legal in blue slots. */
 export function useLeaderIdol(state:GameState,playerId:PlayerId,idolId:CardId,slotIndex:number,effect:IdolEffect,context:EngineContext,options:{snackId?:'free'|'coin'|'compass';ritualFearCount?:2|3|4}={}):GameState{
  const next=structuredClone(state),player=next.players[playerId];if(!player)throw new Error(`Unknown player: ${playerId}`);const leader=player.leader;if(!leader)throw new Error('Expedition Leader idol action requires a leader');
- const slots=idolSlotConfig(leader.id);if(!Number.isInteger(slotIndex)||slotIndex<0||slotIndex>=slots.length)throw new Error(`Invalid idol slot: ${slotIndex}`);if(player.idols.some(idol=>idol.inSlot&&idol.slotIndex===slotIndex))throw new Error('Idol slot is already occupied');const idol=player.idols.find(candidate=>candidate.id===idolId&&!candidate.inSlot);if(!idol)throw new Error('Unused idol is not owned by player');
- const slot=slots[slotIndex];if((effect==='leaderUnique'||effect==='mysticExileArrowhead'||effect==='mysticExileRitual')&&!slot.blue)throw new Error('Unique idol effect requires a blue slot');idol.inSlot=true;idol.slotIndex=slotIndex;
+ const slots=idolSlotConfig(leader.id);if(!Number.isInteger(slotIndex)||slotIndex<0||slotIndex>=slots.length)throw new Error(`Invalid idol slot: ${slotIndex}`);if(player.idols.some(idol=>idol.inSlot&&(idol as any).slotIndex===slotIndex))throw new Error('Idol slot is already occupied');const idol=player.idols.find(candidate=>candidate.id===idolId&&!candidate.inSlot);if(!idol)throw new Error('Unused idol is not owned by player');
+ const slot=slots[slotIndex];if((effect==='leaderUnique'||effect==='mysticExileArrowhead'||effect==='mysticExileRitual')&&!slot.blue)throw new Error('Unique idol effect requires a blue slot');idol.inSlot=true;(idol as any).slotIndex=slotIndex;
  if(leader.id==='mystic'&&slot.fear){const fear=fearCard(context);if(fear)player.playedCards.push(fear.id);}
  const standard=resolveStandard(next,playerId,effect);if(standard)return standard;
  switch(leader.id){
