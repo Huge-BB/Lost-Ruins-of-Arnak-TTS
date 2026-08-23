@@ -99,6 +99,18 @@ All six leaders have data/state and reducer support. Remaining work is concentra
 - [ ] Migrate/cover every remaining specialized pending code through the public dispatcher
 - [ ] Full six-leader integration test matrix
 
+## Assistants
+
+Base-game assistant setup, claiming, upgrading, exhausting, and refreshing are implemented. TTS object JSON contains sprite metadata but no rules text or assistant names.
+
+- [x] Base 12-assistant TTS identities / CardIDs extracted
+- [x] Base 12 silver/gold effect catalog recovered into `web/data/assistant-effects-manual.json`
+- [x] Special semantics captured for travel payment, resource upgrade, exile, draw/discard, and market discount
+- [x] `audit:assistants` reports unmapped visual bindings without blocking the normal test suite
+- [ ] Visually bind the 12 TTS GUID/CardID entries to the 12 effect keys
+- [ ] Enable strict assistant-effect validation once all 12 bindings are complete
+- [ ] Implement assistant effect resolver and route `assistant:ACTIVATE_SILVER` through `pending-choice.ts`
+
 ## Research tracks
 
 - [x] Bird topology/data
@@ -136,7 +148,7 @@ All six leaders have data/state and reducer support. Remaining work is concentra
 - [x] Consistent public `PendingChoice` contract for the web client
 - [x] Unified owner/index validation before pending dispatch
 - [x] Dispatcher coverage for research CHOOSE, assistants, free Artifact, Level I site, visible assistant, free guardian, Falconer site, Mystic Artifact, and existing leader choices
-- [ ] Route any remaining assistant-effect/special pending codes through the same API
+- [ ] Route assistant effect activation through the same API after visual effect bindings are complete
 - [ ] Ensure every pending state is deterministic and serializable
 - [ ] Add integration tests that resume complete actions after chained pending choices
 
@@ -158,10 +170,11 @@ The current `web/package.json` test suite covers core engine, cards/catalog, rou
 
 Near-term priority:
 
-1. Finish routing the remaining specialized pending codes through `pending-choice.ts`.
-2. Build the complete six-leader integration matrix.
-3. Remove duplicated legacy travel-payment paths after local tests confirm the facade coverage.
-4. Start local asset extraction/migration after engine semantics stabilize.
+1. Complete the 12 visual assistant effect bindings.
+2. Implement the assistant effect resolver and connect assistant pending activation.
+3. Build the complete six-leader integration matrix.
+4. Remove duplicated legacy travel-payment paths after local tests confirm the facade coverage.
+5. Start local asset extraction/migration after engine semantics stabilize.
 
 Local `npm test` verification is pending.
 
