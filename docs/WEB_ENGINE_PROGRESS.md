@@ -34,11 +34,12 @@ Integration status:
 - [x] Leader quick action -> Discover integration coverage
 - [x] Leader quick action -> Research integration coverage
 - [x] Action-window cleanup after `END_TURN` / `PASS`
-- [ ] Remove duplicated legacy travel-payment paths once all callers use the unified facade
+- [x] Static routing audit reports legacy hand-only travel helper locations
+- [ ] Remove duplicated legacy travel-payment paths after local tests confirm facade behavior
 
 ## Expedition Leaders
 
-All six leaders have data/state and reducer support. Remaining work is concentrated in edge cases, pending choices, and integration coverage.
+All six leaders have data/state and reducer support. Remaining work is concentrated in edge cases and assistant-dependent pending flows.
 
 ### Captain
 - [x] Core leader state/setup
@@ -46,21 +47,21 @@ All six leaders have data/state and reducer support. Remaining work is concentra
 - [x] Leader card rules
 - [x] Unique idol effect
 - [x] Unique idol temporary travel covered against Dig/Discover/Research
-- [ ] Final pending-choice/action integration coverage
+- [x] Blue idol path covered through public engine API
 
 ### Falconer
 - [x] Core leader state/setup
 - [x] Eagle progression/return action
 - [x] Leader card rules
 - [x] Unique idol effect
-- [ ] Final pending-choice/action integration coverage
+- [x] Blue idol path covered through public engine API
 
 ### Baroness
 - [x] Core leader state/setup
 - [x] Income / card behavior
 - [x] Leader card rules
 - [x] Unique idol effect
-- [ ] Final integration coverage
+- [x] Blue idol path covered through public engine API
 
 ### Professor
 - [x] Core leader state/setup
@@ -68,7 +69,7 @@ All six leaders have data/state and reducer support. Remaining work is concentra
 - [x] Archive artifact purchase action
 - [x] Leader card rules
 - [x] Unique idol effect
-- [ ] Final integration coverage
+- [x] Blue idol path covered through public engine API
 
 ### Explorer
 - [x] Core leader state/setup
@@ -78,7 +79,7 @@ All six leaders have data/state and reducer support. Remaining work is concentra
 - [x] Blue-slot unique idol effect
 - [x] Cartography: activate a face-up idol without taking or flipping it
 - [x] Cartography pending-choice flow covered end-to-end
-- [ ] Final integration coverage
+- [x] Blue idol snack-refresh path covered through public engine API
 
 ### Mystic
 - [x] Core leader state/setup
@@ -90,14 +91,14 @@ All six leaders have data/state and reducer support. Remaining work is concentra
 - [x] Arbitrary idol-slot ordering covered
 - [x] Five-slot scoring covered
 - [x] Fear-slot -> exile -> ritual chain covered
-- [ ] Final integration coverage
+- [x] Blue idol -> exile pending -> public pending resolver covered
 
 ### Shared leader work
 - [x] Blue idol-slot model exists in leader idol actions
-- [ ] Verify blue idol-slot behavior for all six leaders end-to-end
+- [x] Blue idol behavior covered for all six leaders through the public engine API
 - [x] Public pending-choice dispatcher shared by research and leader pending flows
-- [ ] Migrate/cover every remaining specialized pending code through the public dispatcher
-- [ ] Full six-leader integration test matrix
+- [x] Six-leader integration matrix added
+- [ ] Extend matrix with more starting-card/round-transition combinations after local test verification
 
 ## Assistants
 
@@ -136,11 +137,11 @@ Base-game assistant setup, claiming, upgrading, exhausting, and refreshing are i
 - [x] Explorer movement hooks
 - [x] Unified temporary-travel facade for `PLACE_WORKER` and `DISCOVER_SITE`
 - [x] Free/quick-action temporary travel integration coverage before Dig/Discover
-- [ ] Remove or narrow the old direct hand-only travel helper after facade migration is complete
+- [ ] Remove or narrow the old direct hand-only travel helper after facade migration is confirmed locally
 
 ## Pending rewards / choices
 
-`pendingRewards` remains the serialized engine queue. `pending-choice.ts` now provides the canonical client-facing resolver: callers submit a pending index plus a discriminated `PendingChoice`, and the dispatcher routes it to the existing research/leader implementation.
+`pendingRewards` remains the serialized engine queue. `pending-choice.ts` provides the canonical client-facing resolver: callers submit a pending index plus a discriminated `PendingChoice`, and the dispatcher routes it to the existing research/leader implementation.
 
 - [x] Generic pending reward representation
 - [x] Research pending rewards
@@ -148,9 +149,9 @@ Base-game assistant setup, claiming, upgrading, exhausting, and refreshing are i
 - [x] Consistent public `PendingChoice` contract for the web client
 - [x] Unified owner/index validation before pending dispatch
 - [x] Dispatcher coverage for research CHOOSE, assistants, free Artifact, Level I site, visible assistant, free guardian, Falconer site, Mystic Artifact, and existing leader choices
+- [x] Static `audit:routing` for produced pending codes and reducer bypasses
 - [ ] Route assistant effect activation through the same API after visual effect bindings are complete
 - [ ] Ensure every pending state is deterministic and serializable
-- [ ] Add integration tests that resume complete actions after chained pending choices
 
 ## Assets
 
@@ -166,14 +167,16 @@ Current card/component images are referenced from TTS JSON and Steam CDN sprite 
 
 ## Test / architecture notes
 
-The current `web/package.json` test suite covers core engine, cards/catalog, round flow, travel, temporary travel, cross-action temporary travel, Dig/Discover, research, temples, assistants, scoring, leaders, pending rewards, the unified pending-choice dispatcher, and leader integration.
+`engine-api.ts` is the canonical client-facing command surface. `audit:routing` is run as part of `npm test` to flag production calls that bypass the intended reducer layers and to expose legacy travel paths.
+
+The current test suite covers core engine, cards/catalog, round flow, travel, temporary travel, cross-action temporary travel, Dig/Discover, research, temples, assistants, scoring, all six leaders, pending rewards, the unified pending-choice dispatcher, and the six-leader public-API matrix.
 
 Near-term priority:
 
 1. Complete the 12 visual assistant effect bindings.
 2. Implement the assistant effect resolver and connect assistant pending activation.
-3. Build the complete six-leader integration matrix.
-4. Remove duplicated legacy travel-payment paths after local tests confirm the facade coverage.
+3. Fix any failures exposed by the first local `npm test` / `audit:routing` run.
+4. Remove duplicated legacy travel-payment paths after those tests confirm facade coverage.
 5. Start local asset extraction/migration after engine semantics stabilize.
 
 Local `npm test` verification is pending.
