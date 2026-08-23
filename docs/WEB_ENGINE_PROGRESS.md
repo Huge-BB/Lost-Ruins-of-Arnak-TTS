@@ -35,7 +35,7 @@ Integration status:
 
 ## Expedition Leaders
 
-All six leaders have data/state and reducer support. Remaining work is concentrated in edge cases, pending choices, idol actions, and integration coverage.
+All six leaders have data/state and reducer support. Remaining work is concentrated in edge cases, pending choices, and integration coverage.
 
 ### Captain
 
@@ -77,7 +77,8 @@ All six leaders have data/state and reducer support. Remaining work is concentra
 - [x] Archaeologist movement
 - [x] Snack spending/refresh support
 - [x] Blue-slot unique idol effect
-- [ ] Cartography: activate a face-up idol without placing it into an idol slot
+- [x] Cartography: activate a face-up idol without taking or flipping it
+- [x] Cartography pending-choice flow covered end-to-end
 - [ ] Final integration coverage
 
 ### Mystic
@@ -85,9 +86,12 @@ All six leaders have data/state and reducer support. Remaining work is concentra
 - [x] Core leader state/setup
 - [x] Fear/exile/ritual foundations
 - [x] Five-slot idol layout represented
+- [x] Two Fear-marked idol slots represented
+- [x] Three blue idol slots represented
 - [x] Mystic-specific idol branches represented
-- [ ] Finish and verify all five special idol-slot behaviors against rules/data
-- [ ] Resolve remaining pending exile -> ritual choices cleanly
+- [x] Arbitrary idol-slot ordering covered
+- [x] Five-slot scoring covered
+- [x] Fear-slot -> exile -> ritual chain covered
 - [ ] Final integration coverage
 
 ### Shared leader work
@@ -153,11 +157,10 @@ The current `web/package.json` test suite covers core engine, cards/catalog, rou
 
 Near-term priority:
 
-1. Finish Explorer Cartography and Mystic special idol-slot semantics.
-2. Normalize leader/pending-choice APIs.
-3. Strengthen temporary-travel integration tests across free/main actions and Research/Dig/Discover.
-4. Run a complete six-leader integration pass.
-5. Start local asset extraction/migration after engine semantics stabilize.
+1. Normalize leader/pending-choice APIs.
+2. Strengthen temporary-travel integration tests across free/main actions and Research/Dig/Discover.
+3. Run a complete six-leader integration pass.
+4. Start local asset extraction/migration after engine semantics stabilize.
 
 ## Definition of engine-complete for the next milestone
 
