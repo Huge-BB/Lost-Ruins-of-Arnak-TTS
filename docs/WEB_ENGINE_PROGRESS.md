@@ -38,7 +38,6 @@ Integration status:
 All six leaders have data/state and reducer support. Remaining work is concentrated in edge cases, pending choices, and integration coverage.
 
 ### Captain
-
 - [x] Core leader state/setup
 - [x] Specialist action
 - [x] Leader card rules
@@ -46,7 +45,6 @@ All six leaders have data/state and reducer support. Remaining work is concentra
 - [ ] Final pending-choice/action integration coverage
 
 ### Falconer
-
 - [x] Core leader state/setup
 - [x] Eagle progression/return action
 - [x] Leader card rules
@@ -54,7 +52,6 @@ All six leaders have data/state and reducer support. Remaining work is concentra
 - [ ] Final pending-choice/action integration coverage
 
 ### Baroness
-
 - [x] Core leader state/setup
 - [x] Income / card behavior
 - [x] Leader card rules
@@ -62,7 +59,6 @@ All six leaders have data/state and reducer support. Remaining work is concentra
 - [ ] Final integration coverage
 
 ### Professor
-
 - [x] Core leader state/setup
 - [x] Suitcase resources
 - [x] Archive artifact purchase action
@@ -71,7 +67,6 @@ All six leaders have data/state and reducer support. Remaining work is concentra
 - [ ] Final integration coverage
 
 ### Explorer
-
 - [x] Core leader state/setup
 - [x] Snack model
 - [x] Archaeologist movement
@@ -82,7 +77,6 @@ All six leaders have data/state and reducer support. Remaining work is concentra
 - [ ] Final integration coverage
 
 ### Mystic
-
 - [x] Core leader state/setup
 - [x] Fear/exile/ritual foundations
 - [x] Five-slot idol layout represented
@@ -95,10 +89,10 @@ All six leaders have data/state and reducer support. Remaining work is concentra
 - [ ] Final integration coverage
 
 ### Shared leader work
-
 - [x] Blue idol-slot model exists in leader idol actions
 - [ ] Verify blue idol-slot behavior for all six leaders end-to-end
-- [ ] Consolidate remaining pending choice/action representations
+- [x] Public pending-choice dispatcher shared by research and leader pending flows
+- [ ] Migrate/cover every remaining specialized pending code through the public dispatcher
 - [ ] Full six-leader integration test matrix
 
 ## Research tracks
@@ -130,14 +124,17 @@ All six leaders have data/state and reducer support. Remaining work is concentra
 
 ## Pending rewards / choices
 
-The engine already has a generic `pendingRewards` queue and several research/leader flows use it. This remains one of the main areas to normalize before UI/network work depends on the engine API.
+`pendingRewards` remains the serialized engine queue. `pending-choice.ts` now provides the canonical client-facing resolver: callers submit a pending index plus a discriminated `PendingChoice`, and the dispatcher routes it to the existing research/leader implementation.
 
 - [x] Generic pending reward representation
 - [x] Research pending rewards
 - [x] Several leader pending flows
-- [ ] Define a consistent public choice/action contract for the web client
+- [x] Consistent public `PendingChoice` contract for the web client
+- [x] Unified owner/index validation before pending dispatch
+- [x] Dispatcher coverage for research CHOOSE, assistants, free Artifact, Level I site, visible assistant, free guardian, Falconer site, Mystic Artifact, and existing leader choices
+- [ ] Route any remaining assistant-effect/special pending codes through the same API
 - [ ] Ensure every pending state is deterministic and serializable
-- [ ] Add integration tests that resume actions after each pending choice
+- [ ] Add integration tests that resume complete actions after chained pending choices
 
 ## Assets
 
@@ -153,14 +150,16 @@ Current card/component images are referenced from TTS JSON and Steam CDN sprite 
 
 ## Test / architecture notes
 
-The current `web/package.json` test suite covers core engine, cards/catalog, round flow, travel, temporary travel, Dig/Discover, research, temples, assistants, scoring, leaders, pending rewards, and leader integration.
+The current `web/package.json` test suite covers core engine, cards/catalog, round flow, travel, temporary travel, Dig/Discover, research, temples, assistants, scoring, leaders, pending rewards, the unified pending-choice dispatcher, and leader integration.
 
 Near-term priority:
 
-1. Normalize leader/pending-choice APIs.
+1. Finish routing the remaining specialized pending codes through `pending-choice.ts`.
 2. Strengthen temporary-travel integration tests across free/main actions and Research/Dig/Discover.
 3. Run a complete six-leader integration pass.
 4. Start local asset extraction/migration after engine semantics stabilize.
+
+Local `npm test` verification is pending.
 
 ## Definition of engine-complete for the next milestone
 
