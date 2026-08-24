@@ -24,6 +24,13 @@ function assertGrid(width, height, label) {
   }
 }
 
+function addGridReference(sheet, sheetWidth, sheetHeight) {
+  const key = `${sheetWidth}x${sheetHeight}`;
+  if (!sheet.grids.some(grid => `${grid.sheetWidth}x${grid.sheetHeight}` === key)) {
+    sheet.grids.push({ sheetWidth, sheetHeight });
+  }
+}
+
 function addAsset(assets, sheets, { key, kind, id, side, url, sheetWidth, sheetHeight, cardIndex }) {
   if (!url) return;
   assertGrid(sheetWidth, sheetHeight, key);
@@ -35,10 +42,15 @@ function addAsset(assets, sheets, { key, kind, id, side, url, sheetWidth, sheetH
   const existing = sheets.get(idHash);
   if (existing && existing.url !== url) throw new Error(`Asset sheet hash collision: ${idHash}`);
   if (existing) {
-    const sameGrid = existing.sheetWidth === sheetWidth && existing.sheetHeight === sheetHeight;
-    if (!sameGrid) throw new Error(`Sheet ${idHash} is referenced with conflicting grids`);
+    // TTS can reuse the exact same image URL while declaring different CustomDeck grids.
+    // The downloaded file is still shared; grid interpretation belongs to each asset reference.
+    addGridReference(existing, sheetWidth, sheetHeight);
   } else {
-    sheets.set(idHash, { id: idHash, url, sheetWidth, sheetHeight });
+    sheets.set(idHash, {
+      id: idHash,
+      url,
+      grids: [{ sheetWidth, sheetHeight }],
+    });
   }
   assets.push({ key, kind, id, side, sheetId: idHash, sheetWidth, sheetHeight, cardIndex });
 }
@@ -73,10 +85,14 @@ assets.sort((a,b)=>a.key.localeCompare(b.key));
 const manifest = {
   version: 1,
   generatedFrom: SOURCES.map(([,filename])=>`web/src/generated/${filename}`),
-  sheets: [...sheets.values()].sort((a,b)=>a.id.localeCompare(b.id)),
+  sheets: [...sheets.values()]
+    .map(sheet => ({ ...sheet, grids: sheet.grids.sort((a,b)=>(a.sheetWidth*a.sheetHeight)-(b.sheetWidth*b.sheetHeight) || a.sheetWidth-b.sheetWidth) }))
+    .sort((a,b)=>a.id.localeCompare(b.id)),
   assets,
 };
 await mkdir(dirname(outputPath), { recursive: true });
 await writeFile(outputPath, `${JSON.stringify(manifest, null, 2)}\n`);
-console.log(`Asset manifest: ${manifest.assets.length} sprite references across ${manifest.sheets.length} unique sheets`);
+console.log(`Asset manifest: ${manifest.assets.length} sprite references across ${manifest.sheets.length} unique image URLs`);
+const multiGrid = manifest.sheets.filter(sheet => sheet.grids.length > 1);
+if (multiGrid.length) console.log(`Note: ${multiGrid.length} image URL(s) are referenced with multiple TTS sprite grids; per-asset grids are preserved.`);
 console.log(`Wrote ${outputPath}`);
