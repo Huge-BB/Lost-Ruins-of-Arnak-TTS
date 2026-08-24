@@ -1,0 +1,79 @@
+{
+  "$schemaVersion": 2,
+  "boards": {
+    "bird": {
+      "rewards": [
+        { "row": "bird:r0", "token": "magnifying", "rewards": [], "verified": false },
+        { "row": "bird:r0", "token": "journal", "rewards": [], "verified": false },
+        { "row": "bird:r1", "token": "magnifying", "rewards": [], "verified": false },
+        { "row": "bird:r1", "token": "journal", "rewards": [], "verified": false },
+        { "row": "bird:r2", "token": "magnifying", "rewards": [], "verified": false },
+        { "row": "bird:r2", "token": "journal", "rewards": [], "verified": false },
+        { "row": "bird:r3", "token": "magnifying", "rewards": [], "verified": false },
+        { "row": "bird:r3", "token": "journal", "rewards": [], "verified": false },
+        { "row": "bird:r4", "token": "magnifying", "rewards": [], "verified": false },
+        { "row": "bird:r4", "token": "journal", "rewards": [], "verified": false },
+        { "row": "bird:r5", "token": "magnifying", "rewards": [], "verified": false },
+        { "row": "bird:r5", "token": "journal", "rewards": [], "verified": false },
+        { "row": "bird:r6", "token": "magnifying", "rewards": [], "verified": false },
+        { "row": "bird:r6", "token": "journal", "rewards": [], "verified": false }
+      ]
+    },
+    "snake": {
+      "rewards": [
+        { "row": "snake:r0", "token": "magnifying", "rewards": [], "verified": false },
+        { "row": "snake:r0", "token": "journal", "rewards": [], "verified": false },
+        { "row": "snake:r1", "token": "magnifying", "rewards": [], "verified": false },
+        { "row": "snake:r1", "token": "journal", "rewards": [], "verified": false },
+        { "row": "snake:r2", "token": "magnifying", "rewards": [], "verified": false },
+        { "row": "snake:r2", "token": "journal", "rewards": [], "verified": false },
+        { "row": "snake:r3", "token": "magnifying", "rewards": [], "verified": false },
+        { "row": "snake:r3", "token": "journal", "rewards": [], "verified": false },
+        { "row": "snake:r4", "token": "magnifying", "rewards": [], "verified": false },
+        { "row": "snake:r4", "token": "journal", "rewards": [], "verified": false },
+        { "row": "snake:r5", "token": "magnifying", "rewards": [], "verified": false },
+        { "row": "snake:r5", "token": "journal", "rewards": [], "verified": false },
+        { "row": "snake:r6", "token": "magnifying", "rewards": [], "verified": false },
+        { "row": "snake:r6", "token": "journal", "rewards": [], "verified": false }
+      ]
+    },
+    "monkey": {
+      "rewards": [
+        { "row": "monkey:r0", "token": "magnifying", "rewards": [], "verified": false },
+        { "row": "monkey:r0", "token": "journal", "rewards": [], "verified": false },
+        { "row": "monkey:r1", "token": "magnifying", "rewards": [], "verified": false },
+        { "row": "monkey:r1", "token": "journal", "rewards": [], "verified": false },
+        { "row": "monkey:r2", "token": "magnifying", "rewards": [], "verified": false },
+        { "row": "monkey:r2", "token": "journal", "rewards": [], "verified": false },
+        { "row": "monkey:r3", "token": "magnifying", "rewards": [], "verified": false },
+        { "row": "monkey:r3", "token": "journal", "rewards": [], "verified": false },
+        { "row": "monkey:r4", "token": "magnifying", "rewards": [], "verified": false },
+        { "row": "monkey:r4", "token": "journal", "rewards": [], "verified": false },
+        { "row": "monkey:r5", "token": "magnifying", "rewards": [], "verified": false },
+        { "row": "monkey:r5", "token": "journal", "rewards": [], "verified": false },
+        { "row": "monkey:r6", "token": "magnifying", "rewards": [], "verified": false },
+        { "row": "monkey:r6", "token": "journal", "rewards": [], "verified": false },
+        { "row": "monkey:r7", "token": "magnifying", "rewards": [], "verified": false },
+        { "row": "monkey:r7", "token": "journal", "rewards": [], "verified": false }
+      ]
+    },
+    "lizard": {
+      "rewards": [
+        { "row": "lizard:r0", "token": "magnifying", "rewards": [], "verified": false },
+        { "row": "lizard:r0", "token": "journal", "rewards": [], "verified": false },
+        { "row": "lizard:r1", "token": "magnifying", "rewards": [], "verified": false },
+        { "row": "lizard:r1", "token": "journal", "rewards": [], "verified": false },
+        { "row": "lizard:r2", "token": "magnifying", "rewards": [], "verified": false },
+        { "row": "lizard:r2", "token": "journal", "rewards": [], "verified": false },
+        { "row": "lizard:r3", "token": "magnifying", "rewards": [], "verified": false },
+        { "row": "lizard:r3", "token": "journal", "rewards": [], "verified": false },
+        { "row": "lizard:r4", "token": "magnifying", "rewards": [], "verified": false },
+        { "row": "lizard:r4", "token": "journal", "rewards": [], "verified": false },
+        { "row": "lizard:r5", "token": "magnifying", "rewards": [], "verified": false },
+        { "row": "lizard:r5", "token": "journal", "rewards": [], "verified": false },
+        { "row": "lizard:r6", "token": "magnifying", "rewards": [], "verified": false },
+        { "row": "lizard:r6", "token": "journal", "rewards": [], "verified": false }
+      ]
+    }
+  }
+}
