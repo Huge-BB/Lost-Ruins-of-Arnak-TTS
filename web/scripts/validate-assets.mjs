@@ -14,7 +14,12 @@ const sheets = new Map();
 for (const sheet of manifest.sheets) {
   if (!sheet.id || !sheet.url) throw new Error('Asset sheet is missing id/url');
   if (sheets.has(sheet.id)) throw new Error(`Duplicate sheet id: ${sheet.id}`);
-  if (!Number.isInteger(sheet.sheetWidth) || sheet.sheetWidth < 1 || !Number.isInteger(sheet.sheetHeight) || sheet.sheetHeight < 1) throw new Error(`Invalid sheet grid: ${sheet.id}`);
+  if (!Array.isArray(sheet.grids) || sheet.grids.length < 1) throw new Error(`Asset sheet ${sheet.id} is missing grid references`);
+  for (const grid of sheet.grids) {
+    if (!Number.isInteger(grid.sheetWidth) || grid.sheetWidth < 1 || !Number.isInteger(grid.sheetHeight) || grid.sheetHeight < 1) {
+      throw new Error(`Invalid sheet grid on ${sheet.id}`);
+    }
+  }
   sheets.set(sheet.id, sheet);
 }
 const keys = new Set();
@@ -23,7 +28,11 @@ for (const asset of manifest.assets) {
   keys.add(asset.key);
   const sheet = sheets.get(asset.sheetId);
   if (!sheet) throw new Error(`${asset.key} references unknown sheet ${asset.sheetId}`);
-  if (asset.sheetWidth !== sheet.sheetWidth || asset.sheetHeight !== sheet.sheetHeight) throw new Error(`${asset.key} grid differs from sheet ${asset.sheetId}`);
+  if (!Number.isInteger(asset.sheetWidth) || asset.sheetWidth < 1 || !Number.isInteger(asset.sheetHeight) || asset.sheetHeight < 1) {
+    throw new Error(`${asset.key} has invalid grid ${asset.sheetWidth}x${asset.sheetHeight}`);
+  }
+  const declaredGrid = sheet.grids.some(grid => grid.sheetWidth === asset.sheetWidth && grid.sheetHeight === asset.sheetHeight);
+  if (!declaredGrid) throw new Error(`${asset.key} grid is not declared by sheet ${asset.sheetId}`);
   const count = asset.sheetWidth * asset.sheetHeight;
   if (!Number.isInteger(asset.cardIndex) || asset.cardIndex < 0 || asset.cardIndex >= count) throw new Error(`${asset.key} has invalid cardIndex ${asset.cardIndex}`);
 }
@@ -42,4 +51,4 @@ if (local) {
   }
 }
 
-console.log(`Validated ${manifest.assets.length} asset references across ${manifest.sheets.length} sheets${local ? ' and local files' : ''}`);
+console.log(`Validated ${manifest.assets.length} asset references across ${manifest.sheets.length} localized image URLs${local ? ' and local files' : ''}`);
